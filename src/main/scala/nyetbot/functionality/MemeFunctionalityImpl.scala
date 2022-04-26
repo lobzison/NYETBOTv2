@@ -20,21 +20,28 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
         for
             message       <- Scenario.expect(textMessage)
             maybeResponses = service.getMemeResponse(message.text)
-            _             <- Scenario.eval(memeSendingAction(maybeResponses, message.chat))
+            _             <- Scenario.eval(memeSendingAction(maybeResponses, message.chat, message.messageId))
         yield ()
 
-    private def memeSendingAction(messagesF: F[List[SupportedMemeType]], chat: Chat): F[Unit] =
+    private def memeSendingAction(
+        messagesF: F[List[SupportedMemeType]],
+        chat: Chat,
+        replyTo: Int
+    ): F[Unit] =
         for
             messages <- messagesF
-            res      <- messages.traverse(message => sendMeme(message, chat))
+            res      <- messages.traverse(message => sendMeme(message, chat, replyTo))
         yield ()
 
     // TODO: think how to avoid this
-    private def sendMeme(meme: SupportedMemeType, chat: Chat): F[Unit] =
+    private def sendMeme(meme: SupportedMemeType, chat: Chat, replyTo: Int): F[Unit] =
         meme match
-            case SupportedMemeType.Sticker(s)   => chat.send(s).void
-            case SupportedMemeType.PhotoSize(p) => chat.send(p).void
-            case SupportedMemeType.Animation(a) => chat.send(a).void
+            case SupportedMemeType.Sticker(s)   =>
+                chat.send(s, replyToMessageId = Some(replyTo)).void
+            case SupportedMemeType.PhotoSize(p) =>
+                chat.send(p, replyToMessageId = Some(replyTo)).void
+            case SupportedMemeType.Animation(a) =>
+                chat.send(a, replyToMessageId = Some(replyTo)).void
 
     def memeManagementScenarios: List[Scenario[F, Unit]] =
         List(
@@ -56,8 +63,8 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
             _               <-
                 Scenario.eval(
                   chat.send(
-                    "Send how often the meme should be triggered. " +
-                        "Positive int >=1. 1 = every message, 100 = every 100th message"
+                    "Send a number that determines how often the meme could be triggered." +
+                        " From 1 — 'every time' to any positive number, i.e. 100 — one in 100 messages'."
                   )
                 )
             chanceString    <- Scenario.expect(text).handleDiscard
