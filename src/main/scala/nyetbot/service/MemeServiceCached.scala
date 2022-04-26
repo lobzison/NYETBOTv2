@@ -10,8 +10,9 @@ import cats.implicits.*
 import cats.*
 import cats.effect.kernel.Concurrent
 import nyetbot.model.MemeCreationRequest
+import cats.effect.std.Random
 
-class MemeServiceCached[F[_]: MonadThrow](vault: MemeVault[F], memesF: Ref[F, Memes])
+class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: Ref[F, Memes])
     extends MemeService[F]:
 
     override def getAllMemes: F[Memes]                                        =
@@ -19,10 +20,19 @@ class MemeServiceCached[F[_]: MonadThrow](vault: MemeVault[F], memesF: Ref[F, Me
     override def getMemeResponse(message: String): F[List[SupportedMemeType]] =
         val messageTokens = message.toLowerCase
         for
-            memes         <- memesF.get
-            triggeredMemes = memes.memes.filter(m => messageTokens.contains(m.trigger))
-            memesToSend    = triggeredMemes.map(_.body)
+            memes          <- memesF.get
+            memesWithRolls <- memes.memes.traverse(shouldSendMeme(messageTokens))
+            triggeredMemes  = memesWithRolls.collect {
+                                  case (meme, shouldSend) if shouldSend => meme
+                              }
+            memesToSend     = triggeredMemes.map(_.body)
         yield memesToSend
+
+    private def shouldSendMeme(message: String)(meme: Meme): F[(Meme, Boolean)] =
+        for
+            r         <- Random[F].betweenFloat(0f, 1f)
+            shouldSend = message.contains(meme.trigger) && (r < 1f / meme.chance)
+        yield (meme, shouldSend)
 
     def addMeme(memeRequest: MemeCreationRequest): F[Unit] =
         for
@@ -41,7 +51,7 @@ class MemeServiceCached[F[_]: MonadThrow](vault: MemeVault[F], memesF: Ref[F, Me
         yield ()
 
 object MemeServiceCached:
-    def apply[F[_]: Concurrent](vault: MemeVault[F]): F[MemeService[F]] =
+    def apply[F[_]: Concurrent: Random](vault: MemeVault[F]): F[MemeService[F]] =
         for
             memesPersisted <- vault.getAllMemes
             memesParsed    <- memesPersisted.toMemes

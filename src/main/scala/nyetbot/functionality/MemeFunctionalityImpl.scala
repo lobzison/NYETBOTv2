@@ -53,38 +53,61 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
                                  chat.send(s"Name set to $trigger\nSend picture, sticker or animation")
                                )
             meme            <- Scenario.expect(any).handleDiscard
-            creationResult   = createMeme(trigger, meme)
+            _               <-
+                Scenario.eval(
+                  chat.send(
+                    "Send how often the meme should be triggered. " +
+                        "Positive int >=1. 1 = every message, 100 = every 100th message"
+                  )
+                )
+            chanceString    <- Scenario.expect(text).handleDiscard
+            chance          <- Scenario.eval(parseChance(chanceString)).handleErrorWith {
+                                   case _: NumberFormatException =>
+                                       Scenario.eval(chat.send("Invalid chance, setting it to 1, IDGAS")) >>
+                                           Scenario.pure(1)
+                               }
+            creationResult   = createMeme(trigger, meme, chance)
             resultingMessage =
                 creationResult.fold(chat.send("Unsupported media, meme not added"))(action =>
-                    action *> chat.send("Meme added")
+                    action >> chat.send("Meme added")
                 )
             _               <- Scenario.eval(resultingMessage)
         yield ()
 
         // TODO: burh
-    private def createMeme(trigger: String, meme: TelegramMessage): Option[F[Unit]] = meme match
-        case stickerMessage: StickerMessage     =>
-            Some(
-              service.addMeme(
-                MemeCreationRequest(trigger, SupportedMemeType.Sticker(stickerMessage.sticker))
-              )
-            )
-        case imageMessage: PhotoMessage         =>
-            Some(
-              service.addMeme(
-                MemeCreationRequest(trigger, SupportedMemeType.PhotoSize(imageMessage.photo.head))
-              )
-            )
-        case animationMessage: AnimationMessage =>
-            Some(
-              service.addMeme(
-                MemeCreationRequest(
-                  trigger,
-                  SupportedMemeType.Animation(animationMessage.animation)
+    private def createMeme(trigger: String, meme: TelegramMessage, chance: Int): Option[F[Unit]] =
+        meme match
+            case stickerMessage: StickerMessage     =>
+                Some(
+                  service.addMeme(
+                    MemeCreationRequest(
+                      trigger,
+                      SupportedMemeType.Sticker(stickerMessage.sticker),
+                      chance
+                    )
+                  )
                 )
-              )
-            )
-        case _                                  => None
+            case imageMessage: PhotoMessage         =>
+                Some(
+                  service.addMeme(
+                    MemeCreationRequest(
+                      trigger,
+                      SupportedMemeType.PhotoSize(imageMessage.photo.head),
+                      chance
+                    )
+                  )
+                )
+            case animationMessage: AnimationMessage =>
+                Some(
+                  service.addMeme(
+                    MemeCreationRequest(
+                      trigger,
+                      SupportedMemeType.Animation(animationMessage.animation),
+                      chance
+                    )
+                  )
+                )
+            case _                                  => None
 
     def showMemesScenario: Scenario[F, Unit] =
         for
@@ -97,6 +120,10 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
             memes <- service.getAllMemes
             _     <- chat.send(textContent(memes.show).copy(parseMode = Some(ParseMode.HTML)))
         yield ()
+
+    private def parseChance(chanceString: String): F[Int] =
+        for chanceParsed <- MonadThrow[F].fromTry(Try(chanceString.toInt))
+        yield chanceParsed.max(1)
 
     def deleteMemeScenario: Scenario[F, Unit] =
         for

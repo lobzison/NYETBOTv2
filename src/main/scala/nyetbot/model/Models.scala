@@ -23,31 +23,32 @@ enum SupportedMemeType:
     case PhotoSize(photo: canoe.models.PhotoSize)
     case Animation(animation: canoe.models.Animation)
 
-case class Meme(id: MemeId, trigger: String, body: SupportedMemeType)
+case class Meme(id: MemeId, trigger: String, body: SupportedMemeType, chance: Int)
 
-case class MemeCreationRequest(trigger: String, body: SupportedMemeType):
+case class MemeCreationRequest(trigger: String, body: SupportedMemeType, chance: Int):
     def toPersisted(id: MemeId): MemePersisted           =
-        MemePersisted(id, trigger, body.asJson)
+        MemePersisted(id, trigger, body.asJson, chance)
     def toPersistedRequest: MemeCreationRequestPersisted =
-        MemeCreationRequestPersisted(trigger, body.asJson)
+        MemeCreationRequestPersisted(trigger, body.asJson, chance)
 
-case class MemeCreationRequestPersisted(trigger: String, body: Json)
+case class MemeCreationRequestPersisted(trigger: String, body: Json, chance: Int)
 
 case class Memes(memes: List[Meme])
 
-case class MemePersisted(id: MemeId, trigger: String, body: Json):
+case class MemePersisted(id: MemeId, trigger: String, body: Json, chance: Int):
     def toMeme[F[_]: MonadThrow]: F[Meme] =
         for parsedBody <- MonadThrow[F].fromEither(body.as[SupportedMemeType])
         yield Meme(
           id,
           trigger,
-          parsedBody
+          parsedBody,
+          chance
         )
 
 object MemePersisted:
     val memePersisted: Decoder[MemePersisted] =
-        (int4 ~ text ~ json).map { case id ~ trigger ~ body =>
-            MemePersisted(MemeId(id), trigger, body)
+        (int4 ~ text ~ json ~ int4).map { case id ~ trigger ~ body ~ chance =>
+            MemePersisted(MemeId(id), trigger, body, chance)
         }
 
 case class MemesPersisted(memes: List[MemePersisted]):
