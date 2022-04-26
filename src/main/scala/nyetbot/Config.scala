@@ -37,7 +37,7 @@ object Config:
           botToken,
           host,
           port,
-          dbName: String,
+          dbName,
           username,
           password,
           "flyway",
