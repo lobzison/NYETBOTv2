@@ -17,11 +17,11 @@ class MemeServiceCached[F[_]: MonadThrow](vault: MemeVault[F], memesF: Ref[F, Me
     override def getAllMemes: F[Memes]                                        =
         memesF.get
     override def getMemeResponse(message: String): F[List[SupportedMemeType]] =
-        val messageTokens = message.toLowerCase.split(" ").toSet
+        val messageTokens = message.toLowerCase
         for
-            memes       <- memesF.get
-            intersection = messageTokens.intersect(memes.triggers)
-            memesToSend  = intersection.flatMap(memes.memes.get).map(_.body).toList
+            memes         <- memesF.get
+            triggeredMemes = memes.memes.filter(m => messageTokens.contains(m.trigger))
+            memesToSend    = triggeredMemes.map(_.body)
         yield memesToSend
 
     def addMeme(memeRequest: MemeCreationRequest): F[Unit] =

@@ -47,7 +47,8 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
         for
             chat            <- Scenario.expect(command("add_meme").chat)
             _               <- Scenario.eval(chat.send("Send the name of the meme"))
-            trigger         <- Scenario.expect(text).handleDiscard
+            triggerRaw      <- Scenario.expect(text).handleDiscard
+            trigger          = triggerRaw.toLowerCase
             _               <- Scenario.eval(
                                  chat.send(s"Name set to $trigger\nSend picture, sticker or animation")
                                )

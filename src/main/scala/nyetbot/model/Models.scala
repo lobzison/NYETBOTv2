@@ -33,7 +33,7 @@ case class MemeCreationRequest(trigger: String, body: SupportedMemeType):
 
 case class MemeCreationRequestPersisted(trigger: String, body: Json)
 
-case class Memes(triggers: Set[String], memes: Map[String, Meme])
+case class Memes(memes: List[Meme])
 
 case class MemePersisted(id: MemeId, trigger: String, body: Json):
     def toMeme[F[_]: MonadThrow]: F[Meme] =
@@ -52,10 +52,4 @@ object MemePersisted:
 
 case class MemesPersisted(memes: List[MemePersisted]):
     def toMemes[F[_]: MonadThrow]: F[Memes] =
-        val memesF = memes.traverse(x => x.toMeme[F])
-        memesF.map { memes =>
-            Memes(
-              triggers = memes.map(_.trigger).toSet,
-              memes = memes.map(x => x.trigger -> x).toMap
-            )
-        }
+        memes.traverse(x => x.toMeme[F]).map(Memes.apply)

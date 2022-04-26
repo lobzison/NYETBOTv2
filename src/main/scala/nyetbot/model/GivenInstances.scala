@@ -7,7 +7,7 @@ given Show[Memes] with
         val idHeader                                      = "id"
         val triggerHeader                                 = "trigger"
         val memeLengths                                   =
-            m.memes.values.map { m =>
+            m.memes.map { m =>
                 (m.id.value.toString.length, m.trigger.length)
             }.toList :+ (idHeader.length, triggerHeader.length)
         val maxIdLength                                   = memeLengths.map(_._1).max
@@ -20,6 +20,6 @@ given Show[Memes] with
             val line = "-" * (maxIdLength + maxTriggerLength)
             s"$line\n"
         """<code>""" + buildRow(idHeader, triggerHeader) + buildHorizontalSeparator() +
-            m.memes.values
+            m.memes
                 .map(x => buildRow(x.id.value.toString, x.trigger))
                 .mkString + """</code>"""
