@@ -47,11 +47,11 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
         for
             chat            <- Scenario.expect(command("add_meme").chat)
             _               <- Scenario.eval(chat.send("Send the name of the meme"))
-            trigger         <- Scenario.expect(text)
+            trigger         <- Scenario.expect(text).handleDiscard
             _               <- Scenario.eval(
                                  chat.send(s"Name set to $trigger\nSend picture, sticker or animation")
                                )
-            meme            <- Scenario.expect(any)
+            meme            <- Scenario.expect(any).handleDiscard
             creationResult   = createMeme(trigger, meme)
             resultingMessage =
                 creationResult.fold(chat.send("Unsupported media, meme not added"))(action =>
@@ -101,7 +101,7 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
         for
             chat     <- Scenario.expect(command("del_meme").chat)
             _        <- Scenario.eval(chat.send("Send meme id"))
-            idString <- Scenario.expect(text)
+            idString <- Scenario.expect(text).handleDiscard
             _        <- Scenario
                             .eval(deleteMemeAction(idString))
                             .handleErrorWith { case _: NumberFormatException =>
@@ -115,3 +115,15 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
             id <- MonadThrow[F].fromTry(Try(idString.toInt))
             _  <- service.deleteMeme(MemeId(id))
         yield ()
+
+    private def scenarioDiscardTrigger: TelegramMessage => Boolean =
+        case t: TextMessage if t.text == "/discard" => true
+        case _                                      => false
+
+    private def scenarioDiscardAction: TelegramMessage => F[Unit] =
+        case m: UserMessage => m.chat.send("Discarded").void
+        case _              => MonadThrow[F].unit
+
+    extension [A](s: Scenario[F, A])
+        def handleDiscard: Scenario[F, A] =
+            s.stopWith(scenarioDiscardTrigger)(scenarioDiscardAction)
