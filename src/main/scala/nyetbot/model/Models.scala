@@ -18,12 +18,17 @@ object MemeId:
     def apply(id: Int): MemeId           = id
     extension (x: MemeId) def value: Int = x
 
+opaque type Chance = Int
+object Chance:
+    def apply(id: Int): Chance           = id
+    extension (x: Chance) def value: Int = x
+
 enum SupportedMemeType:
     case Sticker(sticker: canoe.models.Sticker)
     case PhotoSize(photo: canoe.models.PhotoSize)
     case Animation(animation: canoe.models.Animation)
 
-case class Meme(id: MemeId, trigger: String, body: SupportedMemeType, chance: Int)
+case class Meme(id: MemeId, trigger: String, body: SupportedMemeType, chance: Chance)
 
 case class MemeCreationRequest(trigger: String, body: SupportedMemeType, chance: Int):
     def toPersisted(id: MemeId): MemePersisted           =
@@ -42,7 +47,7 @@ case class MemePersisted(id: MemeId, trigger: String, body: Json, chance: Int):
           id,
           trigger,
           parsedBody,
-          chance
+          Chance(chance)
         )
 
 object MemePersisted:

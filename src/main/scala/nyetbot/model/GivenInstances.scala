@@ -1,16 +1,16 @@
 package nyetbot.model
 
 import cats.Show
+import cats.implicits.toShow
 
-given Show[Memes] with
+given (using Show[Chance]): Show[Memes] with
     def show(m: Memes): String =
-        val idHeader      = "id"
-        val triggerHeader = "trigger"
-        val chanceHeader  = "occurs every ~N messages"
-
+        val idHeader                                                      = "id"
+        val triggerHeader                                                 = "trigger"
+        val chanceHeader                                                  = "chance of trigger"
         val memeLengths                                                   =
             m.memes.map { m =>
-                (m.id.value.toString.length, m.trigger.length, m.chance.toString.length)
+                (m.id.value.toString.length, m.trigger.length, m.chance.show.length)
             }.toList :+ (idHeader.length, triggerHeader.length, chanceHeader.length)
         val maxIdLength                                                   = memeLengths.map(_._1).max
         val maxTriggerLength                                              = memeLengths.map(_._2).max
@@ -29,5 +29,11 @@ given Show[Memes] with
           chanceHeader
         ) + buildHorizontalSeparator() +
             m.memes
-                .map(x => buildRow(x.id.value.toString, x.trigger, x.chance.toString))
+                .map(x => buildRow(x.id.value.toString, x.trigger, x.chance.show))
                 .mkString + """</code>"""
+
+given Show[Chance] with
+    def show(c: Chance): String =
+        c.value match
+            case 1 => "everytime"
+            case _ => s"1/$c"
