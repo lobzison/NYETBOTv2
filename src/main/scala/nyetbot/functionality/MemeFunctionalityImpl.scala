@@ -38,8 +38,9 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
 
     def memeManagementScenarios: List[Scenario[F, Unit]] =
         List(
-          addMemeScenario.tolerateAll(_ => MonadThrow[F].unit)
-          // , showMemesScenario, deleteMemeScenario
+          addMemeScenario,
+          showMemesScenario,
+          deleteMemeScenario
         )
 
     def addMemeScenario: Scenario[F, Unit] =
