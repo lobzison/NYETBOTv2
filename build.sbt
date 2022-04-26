@@ -1,5 +1,7 @@
 resolvers += "Sonatype OSS Snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots"
 
+enablePlugins(JavaServerAppPackaging)
+
 lazy val commonSettings = Seq(
   scalaVersion := "3.1.2",
   organization := "io.github.lobzison",
