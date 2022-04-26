@@ -11,7 +11,7 @@ import cats.*
 import cats.effect.kernel.Concurrent
 import nyetbot.model.MemeCreationRequest
 
-class MemeServiceCached[F[_]: Monad](vault: MemeVault[F], memesF: Ref[F, Memes])
+class MemeServiceCached[F[_]: MonadThrow](vault: MemeVault[F], memesF: Ref[F, Memes])
     extends MemeService[F]:
 
     override def getAllMemes: F[Memes]                                        =
@@ -28,19 +28,22 @@ class MemeServiceCached[F[_]: Monad](vault: MemeVault[F], memesF: Ref[F, Memes])
         for
             _              <- vault.addMeme(memeRequest)
             memesPersisted <- vault.getAllMemes
-            _              <- memesF.set(memesPersisted.toMemes)
+            memesParsed    <- memesPersisted.toMemes
+            _              <- memesF.set(memesParsed)
         yield ()
 
     def deleteMeme(id: MemeId): F[Unit] =
         for
             _              <- vault.deleteMeme(id)
             memesPersisted <- vault.getAllMemes
-            _              <- memesF.set(memesPersisted.toMemes)
+            memesParsed    <- memesPersisted.toMemes
+            _              <- memesF.set(memesParsed)
         yield ()
 
 object MemeServiceCached:
     def apply[F[_]: Concurrent](vault: MemeVault[F]): F[MemeService[F]] =
         for
             memesPersisted <- vault.getAllMemes
-            ref            <- Ref.of[F, Memes](memesPersisted.toMemes)
+            memesParsed    <- memesPersisted.toMemes
+            ref            <- Ref.of[F, Memes](memesParsed)
         yield new MemeServiceCached(vault, ref)

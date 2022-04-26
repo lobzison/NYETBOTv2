@@ -9,6 +9,9 @@ import skunk.circe.codec.json.json
 import skunk.*
 import cats.Show
 import skunk.Decoder
+import cats.MonadThrow
+import cats.implicits.toFunctorOps
+import cats.implicits.toTraverseOps
 
 opaque type MemeId = Int
 object MemeId:
@@ -31,36 +34,16 @@ case class MemeCreationRequest(trigger: String, body: SupportedMemeType):
 case class MemeCreationRequestPersisted(trigger: String, body: Json)
 
 case class Memes(triggers: Set[String], memes: Map[String, Meme])
-object Memes:
-    given Show[Memes] with
-        def show(m: Memes): String =
-            val idHeader                                      = "id"
-            val triggerHeader                                 = "trigger"
-            val memeLengths                                   =
-                m.memes.values.map { m =>
-                    (m.id.value.toString.length, m.trigger.length)
-                }.toList :+ (idHeader.length, triggerHeader.length)
-            val maxIdLength                                   = memeLengths.map(_._1).max
-            val maxTriggerLength                              = memeLengths.map(_._2).max
-            def buildRow(id: String, trigger: String): String =
-                val idPadding      = " " * (maxIdLength - id.length)
-                val triggerPadding = " " * (maxTriggerLength - trigger.length)
-                s"$id$idPadding | $trigger$triggerPadding\n"
-            def buildHorizontalSeparator(): String            =
-                val line = "-" * (maxIdLength + maxTriggerLength)
-                s"$line\n"
-            """<code>""" + buildRow(idHeader, triggerHeader) + buildHorizontalSeparator() +
-                m.memes.values
-                    .map(x => buildRow(x.id.value.toString, x.trigger))
-                    .mkString + """</code>"""
 
 case class MemePersisted(id: MemeId, trigger: String, body: Json):
-    def toMeme: Meme = Meme(
-      id,
-      trigger,
-      // TODO: Cover that shit
-      body.as[SupportedMemeType].getOrElse(throw new Exception("Invalid meme body"))
-    )
+    def toMeme[F[_]: MonadThrow]: F[Meme] =
+        for parsedBody <- MonadThrow[F].fromEither(body.as[SupportedMemeType])
+        yield Meme(
+          id,
+          trigger,
+          parsedBody
+        )
+
 object MemePersisted:
     val memePersisted: Decoder[MemePersisted] =
         (int4 ~ text ~ json).map { case id ~ trigger ~ body =>
@@ -68,8 +51,11 @@ object MemePersisted:
         }
 
 case class MemesPersisted(memes: List[MemePersisted]):
-    def toMemes: Memes =
-        Memes(
-          triggers = memes.map(_.trigger).toSet,
-          memes = memes.map(x => x.trigger -> x.toMeme).toMap
-        )
+    def toMemes[F[_]: MonadThrow]: F[Memes] =
+        val memesF = memes.traverse(x => x.toMeme[F])
+        memesF.map { memes =>
+            Memes(
+              triggers = memes.map(_.trigger).toSet,
+              memes = memes.map(x => x.trigger -> x).toMap
+            )
+        }

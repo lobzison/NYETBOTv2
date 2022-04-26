@@ -12,6 +12,7 @@ import canoe.models.messages.*
 import nyetbot.model.{SupportedMemeType, MemeCreationRequest, MemeId}
 import nyetbot.model.Memes
 import scala.util.Try
+import nyetbot.model.given
 
 class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeService[F])
     extends MemeFunctionality[F]:

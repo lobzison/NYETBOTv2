@@ -1,9 +1,15 @@
+resolvers += "Sonatype OSS Snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots"
+
 lazy val commonSettings = Seq(
   scalaVersion := "3.1.2",
-  organization := "neytbot",
+  organization := "io.github.lobzison",
+  name         := "NYETBOTv2",
   version      := "0.1.0",
   libraryDependencies ++= Seq(
-    "org.augustjune"     %% "canoe"       % "0.5.1+19-344d9218+20220424-1333-SNAPSHOT",
+    // original library is "org.augustjune" %% "canoe" % "0.5.1",
+    // but it's not released for scala3 and CE3
+    // this is a fork of the original library with ScalaJs dropped
+    "io.github.lobzison" %% "canoe"       % "0.1-SNAPSHOT",
     "org.tpolecat"       %% "skunk-core"  % "0.2.3",
     "org.tpolecat"       %% "skunk-circe" % "0.2.3",
     "com.github.geirolz" %% "fly4s-core"  % "0.0.12",
