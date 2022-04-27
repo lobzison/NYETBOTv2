@@ -18,10 +18,25 @@ object MemeId:
     def apply(id: Int): MemeId           = id
     extension (x: MemeId) def value: Int = x
 
+opaque type SwearId = Int
+object SwearId:
+    def apply(id: Int): SwearId           = id
+    extension (x: SwearId) def value: Int = x
+
+opaque type Swear = String
+object Swear:
+    def apply(s: String): Swear            = s
+    extension (x: Swear) def value: String = x
+
 opaque type Chance = Int
 object Chance:
     def apply(id: Int): Chance           = id
     extension (x: Chance) def value: Int = x
+
+opaque type SwearGroupId = Int
+object SwearGroupId:
+    def apply(id: Int): SwearGroupId           = id
+    extension (x: SwearGroupId) def value: Int = x
 
 enum SupportedMemeType:
     case Sticker(sticker: canoe.models.Sticker)
@@ -59,3 +74,23 @@ object MemePersisted:
 case class MemesPersisted(memes: List[MemePersisted]):
     def toMemes[F[_]: MonadThrow]: F[Memes] =
         memes.traverse(x => x.toMeme[F]).map(Memes.apply)
+
+case class SwearRow(
+    groupId: SwearGroupId,
+    groupChance: Chance,
+    id: SwearId,
+    swear: Swear,
+    weight: Int
+)
+
+object SwearRow:
+    val swearRow: Decoder[SwearRow] =
+        (int4 ~ int4 ~ int4 ~ text ~ int4).map { case groupId ~ groupChance ~ id ~ swear ~ weight =>
+            SwearRow(
+              SwearGroupId(groupId),
+              Chance(groupChance),
+              SwearId(id),
+              Swear(swear),
+              weight
+            )
+        }

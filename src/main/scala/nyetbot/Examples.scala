@@ -1,19 +1,18 @@
 package nyetbot
 
-import cats.Functor
-import canoe.syntax.*
 import canoe.api.*
+import canoe.api.models.ChatApi
 import canoe.models.*
 import canoe.models.messages.*
-
-import cats.syntax.functor.toFunctorOps
-import cats.effect.std.Random
+import canoe.syntax.*
+import cats.Functor
 import cats.Monad
-import cats.implicits.*
 import cats.*
-import cats.effect.kernel.Async
 import cats.effect.IO
-import canoe.api.models.ChatApi
+import cats.effect.kernel.Async
+import cats.effect.std.Random
+import cats.implicits.*
+import cats.syntax.functor.toFunctorOps
 
 def greetings[F[_]: TelegramClient]: Scenario[F, Unit] =
     for
