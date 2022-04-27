@@ -53,7 +53,14 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
     def addMemeScenario: Scenario[F, Unit] =
         for
             chat            <- Scenario.expect(command("add_meme").chat)
-            _               <- Scenario.eval(chat.send("Send the name of the meme"))
+            _               <-
+                Scenario.eval(
+                  chat.send(
+                    "Send trigger of the meme. The syntax is the same as SQL's like - '_' matches one symbol," +
+                        " '%' matches any number of symbols. Normally you want to wrap your trigger into %trigger%, " +
+                        "so it will be triggered independently of other words"
+                  )
+                )
             triggerRaw      <- Scenario.expect(text).handleDiscard
             trigger          = triggerRaw.toLowerCase
             _               <- Scenario.eval(

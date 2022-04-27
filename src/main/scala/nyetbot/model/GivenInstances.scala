@@ -10,7 +10,11 @@ given (using Show[Chance]): Show[Memes] with
         val chanceHeader                                                  = "chance of trigger"
         val memeLengths                                                   =
             m.memes.map { m =>
-                (m.id.value.toString.length, m.trigger.length, m.chance.show.length)
+                (
+                  m.id.value.toString.length,
+                  m.trigger.toMemeTriggerUserSyntax.value.length,
+                  m.chance.show.length
+                )
             }.toList :+ (idHeader.length, triggerHeader.length, chanceHeader.length)
         val maxIdLength                                                   = memeLengths.map(_._1).max
         val maxTriggerLength                                              = memeLengths.map(_._2).max
@@ -28,9 +32,13 @@ given (using Show[Chance]): Show[Memes] with
           triggerHeader,
           chanceHeader
         ) + buildHorizontalSeparator() +
-            m.memes
-                .map(x => buildRow(x.id.value.toString, x.trigger, x.chance.show))
-                .mkString + """</code>"""
+            m.memes.map { x =>
+                buildRow(
+                  x.id.value.toString,
+                  x.trigger.toMemeTriggerUserSyntax.value,
+                  x.chance.show
+                )
+            }.mkString + """</code>"""
 
 given Show[Chance] with
     def show(c: Chance): String =

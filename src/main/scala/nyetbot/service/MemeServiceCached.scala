@@ -31,7 +31,8 @@ class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: R
     private def shouldSendMeme(message: String)(meme: Meme): F[(Meme, Boolean)] =
         for
             r         <- Random[F].betweenFloat(0f, 1f)
-            shouldSend = message.contains(meme.trigger) && (r < 1f / meme.chance.value)
+            shouldSend =
+                meme.trigger.value.matches(message) && (r < 1f / meme.chance.value)
         yield (meme, shouldSend)
 
     def addMeme(memeRequest: MemeCreationRequest): F[Unit] =

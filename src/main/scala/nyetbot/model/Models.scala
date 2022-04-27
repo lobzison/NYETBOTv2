@@ -12,6 +12,7 @@ import skunk.Decoder
 import cats.MonadThrow
 import cats.implicits.toFunctorOps
 import cats.implicits.toTraverseOps
+import scala.util.matching.Regex
 
 opaque type MemeId = Int
 object MemeId:
@@ -38,16 +39,32 @@ object SwearGroupId:
     def apply(id: Int): SwearGroupId           = id
     extension (x: SwearGroupId) def value: Int = x
 
+opaque type MemeTrigger = Regex
+object MemeTrigger:
+    def apply(s: Regex): MemeTrigger = s
+    extension (x: MemeTrigger)
+        def value: Regex                                   = x
+        def toMemeTriggerUserSyntax: MemeTriggerUserSyntax =
+            MemeTriggerUserSyntax(x.toString.replaceAll(raw"\.\*", "%").replaceAll(raw"\.", "_"))
+
+opaque type MemeTriggerUserSyntax = String
+object MemeTriggerUserSyntax:
+    def apply(s: String): MemeTriggerUserSyntax = s
+    extension (x: MemeTriggerUserSyntax)
+        def value: String                = x
+        def toMemeTriggered: MemeTrigger =
+            MemeTrigger(x.replaceAll("%", ".*").replaceAll("_", ".").r)
+
 enum SupportedMemeType:
     case Sticker(sticker: canoe.models.Sticker)
     case PhotoSize(photo: canoe.models.PhotoSize)
     case Animation(animation: canoe.models.Animation)
 
-case class Meme(id: MemeId, trigger: String, body: SupportedMemeType, chance: Chance)
+case class Meme(id: MemeId, trigger: MemeTrigger, body: SupportedMemeType, chance: Chance)
 
 case class MemeCreationRequest(trigger: String, body: SupportedMemeType, chance: Int):
     def toPersisted(id: MemeId): MemePersisted           =
-        MemePersisted(id, trigger, body.asJson, chance)
+        MemePersisted(id, MemeTriggerUserSyntax(trigger), body.asJson, chance)
     def toPersistedRequest: MemeCreationRequestPersisted =
         MemeCreationRequestPersisted(trigger, body.asJson, chance)
 
@@ -55,12 +72,12 @@ case class MemeCreationRequestPersisted(trigger: String, body: Json, chance: Int
 
 case class Memes(memes: List[Meme])
 
-case class MemePersisted(id: MemeId, trigger: String, body: Json, chance: Int):
+case class MemePersisted(id: MemeId, trigger: MemeTriggerUserSyntax, body: Json, chance: Int):
     def toMeme[F[_]: MonadThrow]: F[Meme] =
         for parsedBody <- MonadThrow[F].fromEither(body.as[SupportedMemeType])
         yield Meme(
           id,
-          trigger,
+          trigger.toMemeTriggered,
           parsedBody,
           Chance(chance)
         )
@@ -68,7 +85,7 @@ case class MemePersisted(id: MemeId, trigger: String, body: Json, chance: Int):
 object MemePersisted:
     val memePersisted: Decoder[MemePersisted] =
         (int4 ~ text ~ json ~ int4).map { case id ~ trigger ~ body ~ chance =>
-            MemePersisted(MemeId(id), trigger, body, chance)
+            MemePersisted(MemeId(id), MemeTriggerUserSyntax(trigger), body, chance)
         }
 
 case class MemesPersisted(memes: List[MemePersisted]):
