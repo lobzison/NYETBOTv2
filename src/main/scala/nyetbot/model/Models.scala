@@ -16,43 +16,43 @@ import scala.util.matching.Regex
 
 opaque type MemeId = Int
 object MemeId:
-    def apply(id: Int): MemeId           = id
-    extension (x: MemeId) def value: Int = x
+    inline def apply(id: Int): MemeId           = id
+    extension (x: MemeId) inline def value: Int = x
 
 opaque type SwearId = Int
 object SwearId:
-    def apply(id: Int): SwearId           = id
-    extension (x: SwearId) def value: Int = x
+    inline def apply(id: Int): SwearId           = id
+    extension (x: SwearId) inline def value: Int = x
 
 opaque type Swear = String
 object Swear:
-    def apply(s: String): Swear            = s
-    extension (x: Swear) def value: String = x
+    inline def apply(s: String): Swear            = s
+    extension (x: Swear) inline def value: String = x
 
 opaque type Chance = Int
 object Chance:
-    def apply(id: Int): Chance           = id
-    extension (x: Chance) def value: Int = x
+    inline def apply(id: Int): Chance           = id
+    extension (x: Chance) inline def value: Int = x
 
 opaque type SwearGroupId = Int
 object SwearGroupId:
-    def apply(id: Int): SwearGroupId           = id
-    extension (x: SwearGroupId) def value: Int = x
+    inline def apply(id: Int): SwearGroupId           = id
+    extension (x: SwearGroupId) inline def value: Int = x
 
 opaque type MemeTrigger = Regex
 object MemeTrigger:
-    def apply(s: Regex): MemeTrigger = s
+    inline def apply(s: Regex): MemeTrigger = s
     extension (x: MemeTrigger)
-        def value: Regex                                   = x
-        def toMemeTriggerUserSyntax: MemeTriggerUserSyntax =
+        inline def value: Regex                                   = x
+        inline def toMemeTriggerUserSyntax: MemeTriggerUserSyntax =
             MemeTriggerUserSyntax(x.toString.replaceAll(raw"\.\*", "%").replaceAll(raw"\.", "_"))
 
 opaque type MemeTriggerUserSyntax = String
 object MemeTriggerUserSyntax:
     def apply(s: String): MemeTriggerUserSyntax = s
     extension (x: MemeTriggerUserSyntax)
-        def value: String                = x
-        def toMemeTriggered: MemeTrigger =
+        inline def value: String                = x
+        inline def toMemeTriggered: MemeTrigger =
             MemeTrigger(x.replaceAll("%", ".*").replaceAll("_", ".").r)
 
 enum SupportedMemeType:
@@ -63,16 +63,14 @@ enum SupportedMemeType:
 case class Meme(id: MemeId, trigger: MemeTrigger, body: SupportedMemeType, chance: Chance)
 
 case class MemeCreationRequest(trigger: String, body: SupportedMemeType, chance: Int):
-    def toPersisted(id: MemeId): MemePersisted           =
-        MemePersisted(id, MemeTriggerUserSyntax(trigger), body.asJson, chance)
+    def toPersisted(id: MemeId): MemeRow                 =
+        MemeRow(id, MemeTriggerUserSyntax(trigger), body.asJson, chance)
     def toPersistedRequest: MemeCreationRequestPersisted =
         MemeCreationRequestPersisted(trigger, body.asJson, chance)
 
 case class MemeCreationRequestPersisted(trigger: String, body: Json, chance: Int)
 
-case class Memes(memes: List[Meme])
-
-case class MemePersisted(id: MemeId, trigger: MemeTriggerUserSyntax, body: Json, chance: Int):
+case class MemeRow(id: MemeId, trigger: MemeTriggerUserSyntax, body: Json, chance: Int):
     def toMeme[F[_]: MonadThrow]: F[Meme] =
         for parsedBody <- MonadThrow[F].fromEither(body.as[SupportedMemeType])
         yield Meme(
@@ -82,15 +80,15 @@ case class MemePersisted(id: MemeId, trigger: MemeTriggerUserSyntax, body: Json,
           Chance(chance)
         )
 
-object MemePersisted:
-    val memePersisted: Decoder[MemePersisted] =
+object MemeRow:
+    val memePersisted: Decoder[MemeRow] =
         (int4 ~ text ~ json ~ int4).map { case id ~ trigger ~ body ~ chance =>
-            MemePersisted(MemeId(id), MemeTriggerUserSyntax(trigger), body, chance)
+            MemeRow(MemeId(id), MemeTriggerUserSyntax(trigger), body, chance)
         }
 
-case class MemesPersisted(memes: List[MemePersisted]):
-    def toMemes[F[_]: MonadThrow]: F[Memes] =
-        memes.traverse(x => x.toMeme[F]).map(Memes.apply)
+extension (memes: List[MemeRow])
+    def toMemes[F[_]: MonadThrow]: F[List[Meme]] =
+        memes.traverse(_.toMeme[F])
 
 case class SwearRow(
     groupId: SwearGroupId,

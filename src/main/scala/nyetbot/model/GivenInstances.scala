@@ -3,13 +3,13 @@ package nyetbot.model
 import cats.Show
 import cats.implicits.toShow
 
-given (using Show[Chance]): Show[Memes] with
-    def show(m: Memes): String =
+given (using Show[Chance]): Show[List[Meme]] with
+    def show(memes: List[Meme]): String =
         val idHeader                                                      = "id"
         val triggerHeader                                                 = "trigger"
         val chanceHeader                                                  = "chance of trigger"
         val memeLengths                                                   =
-            m.memes.map { m =>
+            memes.map { m =>
                 (
                   m.id.value.toString.length,
                   m.trigger.toMemeTriggerUserSyntax.value.length,
@@ -32,7 +32,7 @@ given (using Show[Chance]): Show[Memes] with
           triggerHeader,
           chanceHeader
         ) + buildHorizontalSeparator() +
-            m.memes.map { x =>
+            memes.map { x =>
                 buildRow(
                   x.id.value.toString,
                   x.trigger.toMemeTriggerUserSyntax.value,

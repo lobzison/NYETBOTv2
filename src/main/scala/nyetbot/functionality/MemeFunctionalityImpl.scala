@@ -10,7 +10,7 @@ import canoe.api.*
 import canoe.models.*
 import canoe.models.messages.*
 import nyetbot.model.{SupportedMemeType, MemeCreationRequest, MemeId}
-import nyetbot.model.Memes
+import nyetbot.model.Meme
 import scala.util.Try
 import nyetbot.model.given
 
@@ -129,7 +129,7 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
             _    <- Scenario.eval(showMemesAction(chat))
         yield ()
 
-    private def showMemesAction(chat: Chat)(using Show[Memes]): F[Unit] =
+    private def showMemesAction(chat: Chat)(using Show[List[Meme]]): F[Unit] =
         for
             memes <- service.getAllMemes
             _     <- chat.send(textContent(memes.show).copy(parseMode = Some(ParseMode.HTML)))

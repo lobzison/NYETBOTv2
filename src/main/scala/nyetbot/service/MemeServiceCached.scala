@@ -12,16 +12,16 @@ import cats.effect.kernel.Concurrent
 import nyetbot.model.MemeCreationRequest
 import cats.effect.std.Random
 
-class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: Ref[F, Memes])
+class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: Ref[F, List[Meme]])
     extends MemeService[F]:
 
-    override def getAllMemes: F[Memes]                                        =
+    override def getAllMemes: F[List[Meme]]                                   =
         memesF.get
     override def getMemeResponse(message: String): F[List[SupportedMemeType]] =
         val messageTokens = message.toLowerCase
         for
             memes          <- memesF.get
-            memesWithRolls <- memes.memes.traverse(shouldSendMeme(messageTokens))
+            memesWithRolls <- memes.traverse(shouldSendMeme(messageTokens))
             triggeredMemes  = memesWithRolls.collect {
                                   case (meme, shouldSend) if shouldSend => meme
                               }
@@ -56,5 +56,5 @@ object MemeServiceCached:
         for
             memesPersisted <- vault.getAllMemes
             memesParsed    <- memesPersisted.toMemes
-            ref            <- Ref.of[F, Memes](memesParsed)
+            ref            <- Ref.of[F, List[Meme]](memesParsed)
         yield new MemeServiceCached(vault, ref)

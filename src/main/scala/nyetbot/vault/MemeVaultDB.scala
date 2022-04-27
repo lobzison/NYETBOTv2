@@ -14,13 +14,16 @@ import cats.implicits.*
 import cats.Monad
 
 class MemeVaultDB[F[_]: Concurrent](s: Session[F]) extends MemeVault[F]:
-    def getAllMemes: F[MemesPersisted]              =
+    def getAllMemes: F[List[MemeRow]]         =
         val query =
-            sql"select id, trigger, body, chance from memes order by id".query(MemePersisted.memePersisted)
-        s.execute(query).map(MemesPersisted.apply)
+            sql"select id, trigger, body, chance from memes order by id".query(
+              MemeRow.memePersisted
+            )
+        s.execute(query)
     def addMeme(meme: MemeCreationRequest): F[Unit] =
-        val query = sql"insert into memes (trigger, body, chance) values ($text, $json, $int4)".command
-            .gcontramap[MemeCreationRequestPersisted]
+        val query =
+            sql"insert into memes (trigger, body, chance) values ($text, $json, $int4)".command
+                .gcontramap[MemeCreationRequestPersisted]
         s.prepare(query).use(_.execute(meme.toPersistedRequest)).void
     def deleteMeme(memeId: MemeId): F[Unit]         =
         val query = sql"delete from memes where id = $int4".command
