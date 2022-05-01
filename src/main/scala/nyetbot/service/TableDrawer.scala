@@ -1,44 +1,50 @@
 package nyetbot.service
 
-import eu.timepit.refined.refineV
-import eu.timepit.refined.auto.*
-import eu.timepit.refined.numeric.*
-import eu.timepit.refined.api.{RefType, Refined}
-import eu.timepit.refined.boolean.*
-import eu.timepit.refined.char.*
-import eu.timepit.refined.collection.*
-import eu.timepit.refined.generic.*
-import eu.timepit.refined.string.*
+import cats.MonadThrow
+import cats.implicits.toFlatMapOps
+import cats.implicits.toFunctorOps
 
-def buildTable[A](
-    table: List[List[String] Refined Size[Equal[A]]] Refined Size[GreaterEqual[1]]
-): String =
-    val headerRow                                                  = table.head
-    val numberOfColumns                                            = headerRow.size
-    val valuesLength: List[List[Int]]                              = table.map(_.map(_.length))
-    val maxLengths: Array[Int]                                     = valuesLength.transpose.map(_.max).toArray
-    val separator                                                  = " | "
-    val rowLength                                                  = maxLengths.sum + separator.length * (numberOfColumns - 1)
-    val horizontalSeparator                                        = "-" * rowLength
-    def buildRow(row: List[String] Refined Size[Equal[A]]): String =
-        row.zipWithIndex
-            .map { case (value, index) =>
-                val padding = " " * (maxLengths(index) - value.length)
-                s"$value$padding"
-            }
-            .mkString(separator)
-    def buildHeader: String                                        =
-        buildRow(headerRow) + "\n" + horizontalSeparator + "\n"
-    buildHeader + table.map(buildRow).mkString("\n")
+case class NoHeaderRow(e: String)                                 extends Exception
+case class OneOrMoreTableRowsDoNotMatchNumberOfColumns(e: String) extends Exception
 
-def buildHtmlCodeTable[A](
-    table: List[List[String] Refined Size[Equal[A]]] Refined Size[GreaterEqual[1]]
-): String =
-    """<code>""" + buildTable[A](table) + """</code>"""
+sealed abstract case class TableDrawer private (table: List[List[String]]):
+    def buildTable: String =
+        val headerRow                           = table.head
+        val valuesRows                          = table.tail
+        val numberOfColumns                     = headerRow.size
+        val valuesLength: List[List[Int]]       = table.map(_.map(_.length))
+        val maxLengths: Array[Int]              = valuesLength.transpose.map(_.max).toArray
+        val separator                           = " | "
+        val rowLength                           = maxLengths.sum + separator.length * (numberOfColumns - 1)
+        val horizontalSeparator                 = "-" * rowLength
+        def buildRow(row: List[String]): String =
+            row.zipWithIndex
+                .map { case (value, index) =>
+                    val padding = " " * (maxLengths(index) - value.length)
+                    s"$value$padding"
+                }
+                .mkString(separator)
+        def buildHeader: String                 =
+            buildRow(headerRow) + "\n" + horizontalSeparator + "\n"
+        buildHeader + valuesRows.map(buildRow).mkString("\n")
 
-import eu.timepit.refined.*
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.auto.*
-import eu.timepit.refined.numeric.*
+    def buildHtmlCodeTable: String =
+        """<code>""" + buildTable + """</code>"""
 
-val i1: Int Refined Positive = refineV[Positive](5)
+object TableDrawer:
+    def create[F[_]: MonadThrow](numberOfColumns: Int, table: List[List[String]]): F[TableDrawer] =
+        val checkHeaderExists              =
+            if table.size > 0
+            then MonadThrow[F].unit
+            else MonadThrow[F].raiseError(NoHeaderRow(table.toString))
+        val checkAllRowsHaveSameColumnSize =
+            if table.forall(_.size == numberOfColumns)
+            then MonadThrow[F].unit
+            else
+                MonadThrow[F].raiseError(
+                  OneOrMoreTableRowsDoNotMatchNumberOfColumns(table.toString)
+                )
+        for
+            _ <- checkHeaderExists
+            _ <- checkAllRowsHaveSameColumnSize
+        yield new TableDrawer(table) {}
