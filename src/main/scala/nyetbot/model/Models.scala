@@ -13,6 +13,11 @@ import cats.MonadThrow
 import cats.implicits.toFunctorOps
 import cats.implicits.toTraverseOps
 import scala.util.matching.Regex
+import canoe.models.messages.{TelegramMessage, StickerMessage, PhotoMessage, AnimationMessage}
+import canoe.models.outgoing.MessageContent
+import canoe.models.outgoing.StickerContent
+import canoe.models.outgoing.PhotoContent
+import canoe.models.outgoing.AnimationContent
 
 opaque type MemeId = Int
 object MemeId:
@@ -59,6 +64,24 @@ enum SupportedMemeType:
     case Sticker(sticker: canoe.models.Sticker)
     case PhotoSize(photo: canoe.models.PhotoSize)
     case Animation(animation: canoe.models.Animation)
+
+    def toMessageContent =
+        import canoe.syntax.*
+        this match
+            case Sticker(s)   => stickerMessageContent(s)
+            case PhotoSize(p) => photoMessageContent(p)
+            case Animation(a) => animationMessageContent(a)
+
+object SupportedMemeType:
+    def fromTelegramMessage(m: TelegramMessage): Option[SupportedMemeType] =
+        m match
+            case stickerMessage: StickerMessage     =>
+                Some(SupportedMemeType.Sticker(stickerMessage.sticker))
+            case imageMessage: PhotoMessage         =>
+                Some(SupportedMemeType.PhotoSize(imageMessage.photo.head))
+            case animationMessage: AnimationMessage =>
+                Some(SupportedMemeType.Animation(animationMessage.animation))
+            case _                                  => None
 
 case class Meme(id: MemeId, trigger: MemeTrigger, body: SupportedMemeType, chance: Chance)
 

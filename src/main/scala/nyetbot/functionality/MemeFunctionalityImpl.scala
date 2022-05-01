@@ -33,15 +33,8 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
             res      <- messages.traverse(message => sendMeme(message, chat, replyTo))
         yield ()
 
-    // TODO: think how to avoid this
     private def sendMeme(meme: SupportedMemeType, chat: Chat, replyTo: Int): F[Unit] =
-        meme match
-            case SupportedMemeType.Sticker(s)   =>
-                chat.send(s, replyToMessageId = Some(replyTo)).void
-            case SupportedMemeType.PhotoSize(p) =>
-                chat.send(p, replyToMessageId = Some(replyTo)).void
-            case SupportedMemeType.Animation(a) =>
-                chat.send(a, replyToMessageId = Some(replyTo)).void
+        chat.send(meme.toMessageContent, replyToMessageId = Some(replyTo)).void
 
     def memeManagementScenarios: List[Scenario[F, Unit]] =
         List(
@@ -52,8 +45,8 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
 
     def addMemeScenario: Scenario[F, Unit] =
         for
-            chat            <- Scenario.expect(command("add_meme").chat)
-            _               <-
+            chat           <- Scenario.expect(command("add_meme").chat)
+            _              <-
                 Scenario.eval(
                   chat.send(
                     "Send trigger of the meme. The syntax is the same as SQL's like - '_' matches one symbol," +
@@ -61,67 +54,39 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
                         "so it will be triggered independently of other words"
                   )
                 )
-            triggerRaw      <- Scenario.expect(text).handleDiscard
-            trigger          = triggerRaw.toLowerCase
-            _               <- Scenario.eval(
-                                 chat.send(s"Name set to $trigger\nSend picture, sticker or animation")
-                               )
-            meme            <- Scenario.expect(any).handleDiscard
-            _               <-
+            triggerRaw     <- Scenario.expect(text).handleDiscard
+            trigger         = triggerRaw.toLowerCase
+            _              <- Scenario.eval(
+                                chat.send(s"Name set to $trigger\nSend picture, sticker or animation")
+                              )
+            meme           <- Scenario.expect(any).handleDiscard
+            _              <-
                 Scenario.eval(
                   chat.send(
                     "Send a number that determines how often the meme could be triggered." +
                         " From 1 — 'every time' to any positive number, i.e. 100 — one in 100 messages'."
                   )
                 )
-            chanceString    <- Scenario.expect(text).handleDiscard
-            chance          <- Scenario.eval(parseChance(chanceString)).handleErrorWith {
-                                   case _: NumberFormatException =>
-                                       Scenario.eval(chat.send("Invalid chance, setting it to 1, IDGAS")) >>
-                                           Scenario.pure(1)
-                               }
-            creationResult   = createMeme(trigger, meme, chance)
-            resultingMessage =
-                creationResult.fold(chat.send("Unsupported media, meme not added"))(action =>
-                    action >> chat.send("Meme added")
+            chanceString   <- Scenario.expect(text).handleDiscard
+            chance         <- Scenario.eval(parseChance(chanceString)).handleErrorWith {
+                                  case _: NumberFormatException =>
+                                      Scenario.eval(chat.send("Invalid chance, setting it to 1, IDGAS")) >>
+                                          Scenario.pure(1)
+                              }
+            creationResult <- Scenario.eval(createMeme(trigger, meme, chance))
+            _              <-
+                Scenario.eval(
+                  creationResult.fold(chat.send("Unsupported media, meme not added"))(_ =>
+                      chat.send("Meme added")
+                  )
                 )
-            _               <- Scenario.eval(resultingMessage)
         yield ()
 
-        // TODO: burh
-    private def createMeme(trigger: String, meme: TelegramMessage, chance: Int): Option[F[Unit]] =
-        meme match
-            case stickerMessage: StickerMessage     =>
-                Some(
-                  service.addMeme(
-                    MemeCreationRequest(
-                      trigger,
-                      SupportedMemeType.Sticker(stickerMessage.sticker),
-                      chance
-                    )
-                  )
-                )
-            case imageMessage: PhotoMessage         =>
-                Some(
-                  service.addMeme(
-                    MemeCreationRequest(
-                      trigger,
-                      SupportedMemeType.PhotoSize(imageMessage.photo.head),
-                      chance
-                    )
-                  )
-                )
-            case animationMessage: AnimationMessage =>
-                Some(
-                  service.addMeme(
-                    MemeCreationRequest(
-                      trigger,
-                      SupportedMemeType.Animation(animationMessage.animation),
-                      chance
-                    )
-                  )
-                )
-            case _                                  => None
+    private def createMeme(trigger: String, meme: TelegramMessage, chance: Int): F[Option[Unit]] =
+        val memeTypeOpt = SupportedMemeType.fromTelegramMessage(meme)
+        memeTypeOpt.traverse(memeType =>
+            service.addMeme(MemeCreationRequest(trigger, memeType, chance))
+        )
 
     def showMemesScenario: Scenario[F, Unit] =
         for
