@@ -107,20 +107,20 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
     def deleteMemeScenario: Scenario[F, Unit] =
         for
             chat     <- Scenario.expect(command("del_meme").chat)
+            _        <- Scenario.eval(showMemesAction(chat))
             _        <- Scenario.eval(chat.send("Send meme id"))
             idString <- Scenario.expect(text).handleDiscard
-            _        <- Scenario
-                            .eval(deleteMemeAction(idString))
-                            .handleErrorWith { case _: NumberFormatException =>
-                                Scenario.eval(chat.send("Invalid id, please send integer"))
-                            }
-            _        <- Scenario.eval(chat.send("Meme deleted"))
+            res      <- Scenario.eval(deleteMemeAction(idString)).attempt
+            _        <- res.fold(
+                          _ => Scenario.eval(chat.send("Invalid id, please send integer")),
+                          _ => Scenario.eval(chat.send("Meme deleted"))
+                        )
         yield ()
 
     private def deleteMemeAction(idString: String): F[Unit] =
         for
-            id <- MonadThrow[F].fromTry(Try(idString.toInt))
-            _  <- service.deleteMeme(MemeId(id))
+            id  <- MonadThrow[F].fromTry(Try(idString.toInt))
+            res <- service.deleteMeme(MemeId(id))
         yield ()
 
     private def scenarioDiscardTrigger: TelegramMessage => Boolean =
