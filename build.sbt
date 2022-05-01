@@ -15,7 +15,8 @@ lazy val commonSettings = Seq(
     "org.tpolecat"       %% "skunk-core"  % "0.2.3",
     "org.tpolecat"       %% "skunk-circe" % "0.2.3",
     "com.github.geirolz" %% "fly4s-core"  % "0.0.12",
-    "org.postgresql"      % "postgresql"  % "42.3.4"
+    "org.postgresql"      % "postgresql"  % "42.3.4",
+    "eu.timepit"         %% "refined"     % "0.9.28"
   )
 )
 
