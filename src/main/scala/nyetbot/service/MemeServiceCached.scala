@@ -30,9 +30,9 @@ class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: R
 
     private def shouldSendMeme(message: String)(meme: Meme): F[(Meme, Boolean)] =
         for
-            r         <- Random[F].betweenFloat(0f, 1f)
+            r         <- Random[F].betweenInt(0, meme.chance.value)
             shouldSend =
-                meme.trigger.value.matches(message) && (r < 1f / meme.chance.value)
+                meme.trigger.value.matches(message) && (r == 0)
         yield (meme, shouldSend)
 
     def addMeme(memeRequest: MemeCreationRequest): F[Unit] =
@@ -50,6 +50,22 @@ class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: R
             memesParsed    <- memesPersisted.toMemes
             _              <- memesF.set(memesParsed)
         yield ()
+
+    def showAllMemes(using Show[Chance]): F[String] =
+        def buildDrawer(memes: List[Meme]): F[TableDrawer] =
+            val header = List("id", "trigger", "chance of trigger")
+            val body   = memes.map { m =>
+                List(
+                  m.id.value.toString,
+                  m.trigger.toMemeTriggerUserSyntax.value,
+                  m.chance.show
+                )
+            }
+            TableDrawer.create[F](header.length, header :: body)
+        for
+            memes  <- getAllMemes
+            drawer <- buildDrawer(memes)
+        yield drawer.buildHtmlCodeTable
 
 object MemeServiceCached:
     def apply[F[_]: Concurrent: Random](vault: MemeVault[F]): F[MemeService[F]] =

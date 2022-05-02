@@ -96,9 +96,8 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
 
     private def showMemesAction(chat: Chat): F[Unit] =
         for
-            memes <- service.getAllMemes
-            table <- memes.show[F]
-            _     <- chat.send(textContent(table).copy(parseMode = Some(ParseMode.HTML)))
+            memesTable <- service.showAllMemes
+            _          <- chat.send(textContent(memesTable).copy(parseMode = Some(ParseMode.HTML)))
         yield ()
 
     private def parseChance(chanceString: String): F[Int] =

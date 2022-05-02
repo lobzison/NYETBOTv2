@@ -20,9 +20,9 @@ class SwearFunctionalityImpl[F[_]: TelegramClient: Monad: Random] extends SwearF
 
     def getOptionalSwear: F[Option[String]] =
         for
-            r           <- Random[F].betweenFloat(0f, 1f)
+            r           <- Random[F].betweenInt(0, swearEveryNMessage)
             randomSwear <- Random[F].betweenInt(0, swears.size).map(swears(_))
-        yield Option.when(r < 1f / swearEveryNMessage) { randomSwear }
+        yield Option.when(r == 0) { randomSwear }
 
     def sendOptionalSwear(msg: TelegramMessage): F[Unit] =
         for
