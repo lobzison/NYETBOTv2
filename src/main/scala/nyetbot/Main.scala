@@ -44,7 +44,12 @@ object Main extends IOApp.Simple:
             service          <- MemeServiceCached[IO](dbVault)
             meme              = MemeFunctionalityImpl[IO](service)
             _                <- IO.println("Ready")
-        yield List(meme.triggerMemeScenario, swear.scenario) ++ meme.memeManagementScenarios
+        yield List(
+          meme.triggerMemeScenario,
+          swear.scenario,
+          swear.showSwearGroups,
+          swear.showSwear
+        ) ++ meme.memeManagementScenarios
 
     def app(scenarios: List[Scenario[IO, Unit]])(using TelegramClient[IO]): IO[Unit] =
         Bot.polling[IO].follow(scenarios*).compile.drain

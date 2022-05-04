@@ -15,7 +15,8 @@ import scala.util.Try
 import nyetbot.model.{*, given}
 
 class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeService[F])
-    extends MemeFunctionality[F]:
+    extends MemeFunctionality[F]
+    with Discard[F]:
     def triggerMemeScenario: Scenario[F, Unit] =
         for
             message       <- Scenario.expect(textMessage)
@@ -122,15 +123,3 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
             id  <- MonadThrow[F].fromTry(Try(idString.toInt))
             res <- service.deleteMeme(MemeId(id))
         yield ()
-
-    private def scenarioDiscardTrigger: TelegramMessage => Boolean =
-        case t: TextMessage if t.text == "/discard" => true
-        case _                                      => false
-
-    private def scenarioDiscardAction: TelegramMessage => F[Unit] =
-        case m: UserMessage => m.chat.send("Discarded").void
-        case _              => MonadThrow[F].unit
-
-    extension [A](s: Scenario[F, A])
-        def handleDiscard: Scenario[F, A] =
-            s.stopWith(scenarioDiscardTrigger)(scenarioDiscardAction)

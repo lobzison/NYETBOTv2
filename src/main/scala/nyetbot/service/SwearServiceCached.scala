@@ -18,7 +18,9 @@ class SwearServiceCached[F[_]: MonadThrow: Random](
         for
             swearStorage <- inMemory.get
             body          =
-                swearStorage.swearRows.map(s => List(s.groupId.value.toString, s.groupChance.show))
+                swearStorage.swearRows
+                    .map(s => List(s.groupId.value.toString, s.groupChance.show))
+                    .distinct
             drawer       <- TableDrawer.create[F](header.length, header :: body)
         yield drawer.buildHtmlCodeTable
     def showSwears(groupId: SwearGroupId): F[String]   =
