@@ -36,16 +36,13 @@ class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: R
         yield (meme, shouldSend)
 
     def addMeme(memeRequest: MemeCreationRequest): F[Unit] =
-        for
-            _              <- vault.addMeme(memeRequest)
-            memesPersisted <- vault.getAllMemes
-            memesParsed    <- memesPersisted.toMemes
-            _              <- memesF.set(memesParsed)
-        yield ()
+        vault.addMeme(memeRequest) >> updateInMemoryRepresentation
 
     def deleteMeme(id: MemeId): F[Unit] =
+        vault.deleteMeme(id) >> updateInMemoryRepresentation
+
+    val updateInMemoryRepresentation: F[Unit] =
         for
-            _              <- vault.deleteMeme(id)
             memesPersisted <- vault.getAllMemes
             memesParsed    <- memesPersisted.toMemes
             _              <- memesF.set(memesParsed)

@@ -10,8 +10,10 @@ import canoe.api.*
 import canoe.models.*
 import canoe.models.messages.*
 import canoe.syntax.*
+import nyetbot.service.SwearService
 
-class SwearFunctionalityImpl[F[_]: TelegramClient: Monad: Random] extends SwearFunctionality[F]:
+class SwearFunctionalityImpl[F[_]: TelegramClient: Monad: Random](service: SwearService[F])
+    extends SwearFunctionality[F]:
     override def scenario: Scenario[F, Unit] =
         for
             msg <- Scenario.expect(any)
@@ -19,10 +21,7 @@ class SwearFunctionalityImpl[F[_]: TelegramClient: Monad: Random] extends SwearF
         yield ()
 
     def getOptionalSwear: F[Option[String]] =
-        for
-            r           <- Random[F].betweenInt(0, swearEveryNMessage)
-            randomSwear <- Random[F].betweenInt(0, swears.size).map(swears(_))
-        yield Option.when(r == 0) { randomSwear }
+        service.getSwear.map(_.map(_.value))
 
     def sendOptionalSwear(msg: TelegramMessage): F[Unit] =
         for
@@ -31,19 +30,3 @@ class SwearFunctionalityImpl[F[_]: TelegramClient: Monad: Random] extends SwearF
                          msg.chat.send(swear, replyToMessageId = Some(msg.messageId)).void
                      )
         yield ()
-
-    val swearEveryNMessage = 300
-
-    val swears: Vector[String] =
-        Vector(
-          "slava Ukraine!",
-          "nu eto Zalupa uje",
-          "da",
-          "tak tochno",
-          "eto ne tak",
-          "infa 100",
-          "nyet",
-          "podderjivau vot etogo",
-          "puk puk",
-          "welcome to the club, buddy"
-        )

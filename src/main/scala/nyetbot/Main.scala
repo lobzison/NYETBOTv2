@@ -16,6 +16,7 @@ import nyetbot.service.MemeServiceCached
 import fly4s.core.*
 import nyetbot.vault.*
 import skunk.Session
+import nyetbot.service.SwearServiceImpl
 
 object Main extends IOApp.Simple:
     def run =
@@ -42,7 +43,9 @@ object Main extends IOApp.Simple:
             given Random[IO] <- Random.scalaUtilRandom[IO]
             _                <- fly4s.migrate
             dbVault           = MemeVaultDB[IO](db)
-            swear             = SwearFunctionalityImpl[IO]
+            swearVault        = SwearVaultImpl[IO](db)
+            swearService     <- SwearServiceImpl[IO](swearVault)
+            swear             = SwearFunctionalityImpl[IO](swearService)
             service          <- MemeServiceCached[IO](dbVault)
             meme              = MemeFunctionalityImpl[IO](service)
             _                <- IO.println("Ready")

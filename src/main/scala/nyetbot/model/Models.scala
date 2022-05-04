@@ -132,3 +132,11 @@ object SwearRow:
               weight
             )
         }
+
+case class SwearMemoryStorage(
+    swearRows: List[SwearRow],
+    swearGroupsOrdered: List[(SwearGroupId, Chance)],
+    groupedSwears: Map[SwearGroupId, SwearGroup]
+)
+
+case class SwearGroup(totalWeight: Int, swears: List[SwearRow])
