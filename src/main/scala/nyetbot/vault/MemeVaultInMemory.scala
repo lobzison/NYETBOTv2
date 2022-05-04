@@ -10,7 +10,7 @@ import cats.implicits.*
 import cats.*
 
 class MemeVaultInMemory[F[_]: Monad](ref: Ref[F, List[MemeRow]]) extends MemeVault[F]:
-    override def getAllMemes: F[List[MemeRow]]         =
+    override def getAllMemes: F[List[MemeRow]]               =
         ref.get
     override def addMeme(meme: MemeCreationRequest): F[Unit] =
         for
@@ -18,7 +18,6 @@ class MemeVaultInMemory[F[_]: Monad](ref: Ref[F, List[MemeRow]]) extends MemeVau
             newId         = currentMemes.size + 1
             newMeme       = meme.toPersisted(MemeId(newId))
             _            <- ref.update(memeVault => memeVault :+ newMeme)
-            _             = println(s"adding meme $meme")
         yield ()
     override def deleteMeme(memeId: MemeId): F[Unit]         =
         for

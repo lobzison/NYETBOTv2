@@ -9,7 +9,7 @@ import cats.effect.std.Random
 import cats.effect.kernel.Ref
 import cats.effect.kernel.Concurrent
 
-class SwearServiceImpl[F[_]: MonadThrow: Random](
+class SwearServiceCached[F[_]: MonadThrow: Random](
     vault: SwearVault[F],
     inMemory: Ref[F, SwearMemoryStorage]
 ) extends SwearService[F]:
@@ -46,7 +46,6 @@ class SwearServiceImpl[F[_]: MonadThrow: Random](
     private def rollSwearInGroup(id: SwearGroupId): F[Swear] =
         for
             swearStorage <- inMemory.get
-            _             = println(swearStorage)
             group         = swearStorage.groupedSwears(id)
             r            <- Random[F].betweenInt(0, group.totalWeight)
         yield selectSwearWeighted(group.swears, r)
@@ -79,19 +78,19 @@ class SwearServiceImpl[F[_]: MonadThrow: Random](
     private val updateInMemoryRepresentation: F[Unit] =
         for
             swearRows <- vault.getSwears
-            _         <- inMemory.set(SwearServiceImpl.createInMemoryRepresentation(swearRows))
+            _         <- inMemory.set(SwearServiceCached.createInMemoryRepresentation(swearRows))
         yield ()
 
-object SwearServiceImpl:
+object SwearServiceCached:
 
-    def apply[F[_]: Concurrent: Random](vault: SwearVault[F]): F[SwearServiceImpl[F]] =
+    def apply[F[_]: Concurrent: Random](vault: SwearVault[F]): F[SwearServiceCached[F]] =
         for
             swearRows <- vault.getSwears
             inMemory  <-
                 Ref.of[F, SwearMemoryStorage](
-                  SwearServiceImpl.createInMemoryRepresentation(swearRows)
+                  SwearServiceCached.createInMemoryRepresentation(swearRows)
                 )
-        yield new SwearServiceImpl(vault, inMemory)
+        yield new SwearServiceCached(vault, inMemory)
 
     def createInMemoryRepresentation(swearRows: List[SwearRow]): SwearMemoryStorage =
         val swearGroupsOrdered =

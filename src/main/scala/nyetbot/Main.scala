@@ -1,22 +1,17 @@
 package nyetbot
 
-import cats.effect.{IOApp, IO}
-import fs2.Stream
 import canoe.api.*
 import canoe.syntax.*
-import cats.effect.kernel.Async
+import cats.effect.{IO, IOApp}
+import cats.effect.kernel.*
 import cats.effect.std.Random
-import cats.Monad
-import cats.effect.kernel.Sync
-import nyetbot.functionality.*
-import cats.effect.kernel.Resource
-import nyetbot.model.*
-import cats.effect.kernel.Ref
-import nyetbot.service.MemeServiceCached
 import fly4s.core.*
+import fs2.Stream
+import nyetbot.functionality.*
+import nyetbot.model.*
+import nyetbot.service.*
 import nyetbot.vault.*
 import skunk.Session
-import nyetbot.service.SwearServiceImpl
 
 object Main extends IOApp.Simple:
     def run =
@@ -44,7 +39,7 @@ object Main extends IOApp.Simple:
             _                <- fly4s.migrate
             dbVault           = MemeVaultDB[IO](db)
             swearVault        = SwearVaultImpl[IO](db)
-            swearService     <- SwearServiceImpl[IO](swearVault)
+            swearService     <- SwearServiceCached[IO](swearVault)
             swear             = SwearFunctionalityImpl[IO](swearService)
             service          <- MemeServiceCached[IO](dbVault)
             meme              = MemeFunctionalityImpl[IO](service)
