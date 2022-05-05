@@ -69,7 +69,18 @@ class SwearServiceCached[F[_]: MonadThrow: Random](
         vault.addSwearGroup(groupChance) >> updateInMemoryRepresentation
 
     def addSwear(groupId: SwearGroupId, swear: Swear, weight: Int): F[Unit] =
-        vault.addSwear(groupId, swear, weight) >> updateInMemoryRepresentation
+        val performUpdate = vault.addSwear(groupId, swear, weight) >> updateInMemoryRepresentation
+        val raiseError    = MonadThrow[F].raiseError[Unit](
+          new IllegalArgumentException(s"Swear group with id $groupId does not exist")
+        )
+        for
+            swearGroupExists <- swearGroupExists(groupId)
+            _                <- if swearGroupExists then performUpdate else raiseError
+        yield ()
+
+    def swearGroupExists(groupId: SwearGroupId): F[Boolean] =
+        for swearStorage <- inMemory.get
+        yield swearStorage.groupedSwears.contains(groupId)
 
     def deleteSwearGroup(id: SwearGroupId): F[Unit] =
         vault.deleteSwearGroup(id) >> updateInMemoryRepresentation

@@ -11,3 +11,4 @@ trait SwearService[F[_]]:
     def addSwear(groupId: SwearGroupId, swear: Swear, weight: Int): F[Unit]
     def deleteSwearGroup(id: SwearGroupId): F[Unit]
     def deleteSwear(id: SwearId): F[Unit]
+    def swearGroupExists(groupId: SwearGroupId): F[Boolean]

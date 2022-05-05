@@ -11,7 +11,8 @@ class SwearVaultImpl[F[_]: Concurrent](s: Session[F]) extends SwearVault[F]:
     def getSwears: F[List[SwearRow]]                                        =
         val query =
             sql"""select sg.id, sg.chance, s.id, s.swear, s.weight from
-                swear_group sg join swear s on sg.id = s.group_id""".query(SwearRow.swearRow)
+                swear_group sg join swear s on sg.id = s.group_id 
+                order by sg.id, s.id""".query(SwearRow.swearRow)
         s.execute(query)
     def addSwearGroup(groupChance: Chance): F[Unit]                         =
         val query =
