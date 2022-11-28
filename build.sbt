@@ -6,7 +6,10 @@ lazy val commonSettings = Seq(
   name         := "NYETBOTv2",
   version      := "0.1.0",
   libraryDependencies ++= Seq(
-    "org.augustjune"     %% "canoe"       % "0.6.0",
+    // original library is "org.augustjune" %% "canoe" % "0.5.1",
+    // but it's not released for scala3 and CE3
+    // this is a fork of the original library with ScalaJs dropped
+    "io.github.lobzison" %% "canoe"       % "0.1-SNAPSHOT",
     "org.tpolecat"       %% "skunk-core"  % "0.3.2",
     "org.tpolecat"       %% "skunk-circe" % "0.3.2",
     "com.github.geirolz" %% "fly4s-core"  % "0.0.14",
