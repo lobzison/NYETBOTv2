@@ -1,1 +1,0 @@
-bot: target/universal/stage/bin/nyetbotv2
