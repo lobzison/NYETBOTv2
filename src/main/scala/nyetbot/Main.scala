@@ -17,6 +17,9 @@ import cats.effect.IO.asyncForIO
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.Client
 import nyetbot.service.TranslationService.Translation.translationDecoder
+import cats.implicits.catsSyntaxApplicativeError
+import scala.util.control.NonFatal
+import concurrent.duration.DurationInt
 
 object Main extends IOApp.Simple:
     def run =
@@ -62,4 +65,8 @@ object Main extends IOApp.Simple:
         ) ++ meme.memeManagementScenarios ++ swear.scenarios :+ llm.reply
 
     def app(scenarios: List[Scenario[IO, Unit]])(using TelegramClient[IO]): IO[Unit] =
-        Bot.polling[IO].follow(scenarios*).compile.drain
+        val prog = Bot.polling[IO].follow(scenarios*).compile.drain
+        prog.recoverWith { case NonFatal(e) =>
+            IO.println(s"Died with $e, restarting") >>
+                IO.sleep(1.minute) >> prog
+        }

@@ -47,7 +47,7 @@ class LlmServiceImpl[F[_]: Sync: Console](config: Config.LlmConfig) extends LlmS
                 tryLlm   <- Sync[F].delay(llm(fullPrompt, config.llmParams))
                 lazyList <- Sync[F].fromTry(tryLlm)
                 _        <- Console[F].println("Start prediction")
-                stream    = Stream.fromIterator(lazyList.iterator, 1)
+                stream    = Stream.fromBlockingIterator(lazyList.iterator, 1)
                 res      <- stream
                                 .evalMap(m => Console[F].println(s""""$m"""").as(m))
                                 .through(StreamUtils.stopAt(config.userPrefix))

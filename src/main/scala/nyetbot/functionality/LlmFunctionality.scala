@@ -25,7 +25,7 @@ import nyetbot.service.TransliterationService
 trait LlmFunctionality[F[_]]:
     def reply: Scenario[F, Unit]
 
-class LlmFunctionalityImpl[F[_]: Monad: TelegramClient: Console](
+class LlmFunctionalityImpl[F[_]: Monad: TelegramClient: Console: Random](
     service: LlmService[F],
     translationService: TranslationService[F],
     queue: Queue[F, LlmContextMessage],
@@ -34,7 +34,18 @@ class LlmFunctionalityImpl[F[_]: Monad: TelegramClient: Console](
 
     def predictReply(msg: TextMessage): F[Unit] =
         for
-            _              <- queue.offer(LlmContextMessage.fromTextMessage(msg, config))
+            _ <- queue.offer(LlmContextMessage.fromTextMessage(msg, config))
+            _ <- triggerReplyWithChance(msg)
+        yield ()
+
+    def triggerReplyWithChance(msg: TextMessage): F[Unit] =
+        for
+            c <- Random[F].betweenInt(0, 200)
+            _ <- if c == 0 then triggerReply(msg) else Monad[F].unit
+        yield ()
+
+    def triggerReply(msg: TextMessage): F[Unit] =
+        for
             // Amazing efficiency 🤦‍♂️
             msgs           <- queue.tryTakeN(None)
             translatedMsgs <-
@@ -60,7 +71,7 @@ class LlmFunctionalityImpl[F[_]: Monad: TelegramClient: Console](
         yield ()
 
 object LlmFunctionalityImpl:
-    def mk[F[_]: Monad: TelegramClient: Console](
+    def mk[F[_]: Monad: TelegramClient: Console: Random](
         service: LlmService[F],
         translationService: TranslationService[F],
         config: LlmConfig
