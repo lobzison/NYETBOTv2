@@ -17,16 +17,16 @@ class SwearVaultImpl[F[_]: Concurrent](s: Session[F]) extends SwearVault[F]:
     def addSwearGroup(groupChance: Chance): F[Unit]                         =
         val query =
             sql"""insert into swear_group (chance) values ($int4)""".command
-        s.prepareR(query).use(_.execute(groupChance.value)).void
+        s.prepare(query).use(_.execute(groupChance.value)).void
     def addSwear(groupId: SwearGroupId, swear: Swear, weight: Int): F[Unit] =
         val query =
             sql"""insert into swear (group_id, swear, weight) values ($int4, $text, $int4)""".command
-        s.prepareR(query).use(_.execute(groupId.value, swear.value, weight)).void
+        s.prepare(query).use(_.execute((groupId.value, swear.value), weight)).void
     def deleteSwearGroup(id: SwearGroupId): F[Unit]                         =
         val query =
             sql"""delete from swear_group where id = $int4""".command
-        s.prepareR(query).use(_.execute(id.value)).void
+        s.prepare(query).use(_.execute(id.value)).void
     def deleteSwear(id: SwearId): F[Unit]                                   =
         val query =
             sql"""delete from swear where id = $int4""".command
-        s.prepareR(query).use(_.execute(id.value)).void
+        s.prepare(query).use(_.execute(id.value)).void
