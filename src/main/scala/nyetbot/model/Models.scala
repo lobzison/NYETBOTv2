@@ -18,6 +18,8 @@ import canoe.models.outgoing.MessageContent
 import canoe.models.outgoing.StickerContent
 import canoe.models.outgoing.PhotoContent
 import canoe.models.outgoing.AnimationContent
+import canoe.models.messages.TextMessage
+import nyetbot.Config.LlmConfig
 
 opaque type MemeId = Int
 object MemeId:
@@ -140,3 +142,11 @@ case class SwearMemoryStorage(
 )
 
 case class SwearGroup(totalWeight: Int, swears: List[SwearRow])
+case class LlmContextMessage(userName: String, text: String)
+
+object LlmContextMessage:
+    def fromTextMessage(t: TextMessage, config: LlmConfig): LlmContextMessage =
+        val user = t.from
+            .map(u => s"${config.userPrefix}${u.firstName}_${u.lastName.getOrElse("")}")
+            .getOrElse("user")
+        LlmContextMessage(user, t.text)
