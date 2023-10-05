@@ -40,7 +40,7 @@ class LlmFunctionalityImpl[F[_]: Monad: TelegramClient: Console: Random](
 
     def triggerReplyWithChance(msg: TextMessage): F[Unit] =
         for
-            c <- Random[F].betweenInt(0, 200)
+            c <- Random[F].betweenInt(0, config.llmMessageEvery)
             _ <- if c == 0 then triggerReply(msg) else Monad[F].unit
         yield ()
 

@@ -27,7 +27,8 @@ object Config:
         inputPrefix: String,
         promptPrefix: String,
         promptSuffix: String,
-        llmParams: LlmParams
+        llmParams: LlmParams,
+        llmMessageEvery: Int
     )
 
     case class DbConfig(
@@ -49,22 +50,31 @@ object Config:
 
     def build[F[_]: Sync]: F[Config] =
         for
-            botToken     <- Sync[F].delay(sys.env("NYETBOT_KEY"))
-            fullUrl      <- Sync[F].delay(sys.env("DATABASE_URL"))
-            translateKey <- Sync[F].delay(sys.env("TRANSLATE_KEY"))
-            libllamaPath <- Sync[F].delay(sys.env("LIBLLAMA"))
-            weightsPath  <- Sync[F].delay(sys.env("WEIGHTS"))
-        yield buildConfig(botToken, fullUrl, translateKey, libllamaPath, weightsPath)
+            botToken        <- Sync[F].delay(sys.env("NYETBOT_KEY"))
+            fullUrl         <- Sync[F].delay(sys.env("DATABASE_URL"))
+            translateKey    <- Sync[F].delay(sys.env("TRANSLATE_KEY"))
+            libllamaPath    <- Sync[F].delay(sys.env("LIBLLAMA"))
+            weightsPath     <- Sync[F].delay(sys.env("WEIGHTS"))
+            llmMessageEvery <- Sync[F].delay(sys.env("LLM_MESSAGE_EVERY").toInt)
+        yield buildConfig(
+          botToken,
+          fullUrl,
+          translateKey,
+          libllamaPath,
+          weightsPath,
+          llmMessageEvery
+        )
 
     def buildConfig(
         botToken: String,
         fullDbUrl: String,
         translateKey: String,
         libllamaPath: String,
-        weightsPath: String
+        weightsPath: String,
+        llmMessageEvery: Int
     ) =
         val dbConfig        = buildDbConfig(fullDbUrl)
-        val llmConfig       = buildLlmConfig(libllamaPath, weightsPath)
+        val llmConfig       = buildLlmConfig(libllamaPath, weightsPath, llmMessageEvery)
         val translateConfig =
             TranslateConfig(uri"https://api-free.deepl.com/v2/translate", translateKey)
         Config(
@@ -84,9 +94,9 @@ object Config:
         val dbName   = dbUri.getPath.stripPrefix("/")
         DbConfig(host, port, dbName, username, password, "flyway", List("db"))
 
-    def buildLlmConfig(llibPath: String, weightsPathStr: String): LlmConfig =
+    def buildLlmConfig(llibPath: String, weightsPathStr: String, llmMessageEvery: Int): LlmConfig =
         val weightsPath   = Paths.get(weightsPathStr)
-        val contextParams = ContextParams(threads = 6)
+        val contextParams = ContextParams(threads = 6, lowVram = true)
         val llmParams     = LlmParams(context = contextParams, predictTokens = 720, echo = false)
         val botName       = "Nyetbot"
         val userPrefix    = "$$"
@@ -107,7 +117,8 @@ Example replies from $botName include "pathetic scum", "lol, you are weak", "you
           inputPrefix,
           promptPrefix,
           promptSuffix,
-          llmParams
+          llmParams,
+          llmMessageEvery
         )
 
     def configResource[F[_]: Sync]: Resource[F, Config] =
