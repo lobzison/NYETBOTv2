@@ -45,6 +45,16 @@ class LlmFunctionalityImpl[F[_]: Monad: TelegramClient: Console: Random](
         yield ()
 
     def triggerReply(msg: TextMessage): F[Unit] =
+        def sendIfNotEmpty(s: String) =
+            if s.nonEmpty then
+                msg.chat
+                    .send(
+                      TransliterationService.transliterate(s).toLowerCase,
+                      replyToMessageId = Some(msg.messageId)
+                    )
+                    .void
+            else Monad[F].unit
+
         for
             // Amazing efficiency 🤦‍♂️
             msgs           <- queue.tryTakeN(None)
@@ -56,12 +66,7 @@ class LlmFunctionalityImpl[F[_]: Monad: TelegramClient: Console: Random](
             reply          <- translationService.translate(replyEng, TranslationService.TargetLang.RU)
             _              <- queue.tryOfferN(msgs)
             _              <- queue.offer(LlmContextMessage(config.userPrefix + config.botName, reply))
-            _              <- msg.chat
-                                  .send(
-                                    TransliterationService.transliterate(reply).toLowerCase,
-                                    replyToMessageId = Some(msg.messageId)
-                                  )
-                                  .void
+            _              <- sendIfNotEmpty(reply)
         yield ()
 
     override def reply: Scenario[F, Unit] =
@@ -77,5 +82,5 @@ object LlmFunctionalityImpl:
         config: LlmConfig
     )(using GenConcurrent[F, ?]): F[LlmFunctionalityImpl[F]] =
         Queue
-            .circularBuffer[F, LlmContextMessage](20)
+            .circularBuffer[F, LlmContextMessage](10)
             .map(q => LlmFunctionalityImpl[F](service, translationService, q, config))
