@@ -96,11 +96,11 @@ object Config:
 
     def buildLlmConfig(llibPath: String, weightsPathStr: String, llmMessageEvery: Int): LlmConfig =
         val weightsPath   = Paths.get(weightsPathStr)
-        val contextParams = ContextParams(threads = 6, lowVram = true)
-        val llmParams     = LlmParams(context = contextParams, predictTokens = 720, echo = false)
+        val contextParams = ContextParams(contextSize = 4092, threads = 6, lowVram = true)
+        val llmParams     = LlmParams(context = contextParams, echo = false)
         val botName       = "Nyetbot"
         val userPrefix    = "$$"
-        val inputPrefix   = "*****>"
+        val inputPrefix   = ":"
         val promptPrefix  = s"""
 Below is a transcript of a chat conversation of users and a $botName.
 $botName is extremley rude, like a teenager that discovered 4chan. $botName constantly swears, uses slang, and bullies other users. $botName in short, edgy, one sentence punchlines. $botName will rarely agree, and never compliment anyone.

@@ -68,5 +68,5 @@ object Main extends IOApp.Simple:
         val prog = Bot.polling[IO].follow(scenarios*).compile.drain
         prog.recoverWith { case NonFatal(e) =>
             IO.println(s"Died with $e, restarting") >>
-                IO.sleep(1.minute) >> prog
+                IO.sleep(1.minute) >> app(scenarios)
         }
