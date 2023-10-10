@@ -68,7 +68,7 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
             reply          <- translationService.translate(replyEng, TranslationService.TargetLang.RU)
             _              <- queue.tryOfferN(msgs)
             _              <- queue.offer(LlmContextMessage(config.userPrefix + config.botName, reply))
-            _              <- sendIfNotEmpty(reply)
+            _              <- sendIfNotEmpty(reply.trim)
         yield ()
 
     override def reply: Scenario[F, Unit] =

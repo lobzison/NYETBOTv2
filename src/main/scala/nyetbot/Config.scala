@@ -97,7 +97,7 @@ object Config:
     def buildLlmConfig(llibPath: String, weightsPathStr: String, llmMessageEvery: Int): LlmConfig =
         val weightsPath   = Paths.get(weightsPathStr)
         val contextParams = ContextParams(contextSize = 2048, threads = 6, lowVram = true)
-        val llmParams     = LlmParams(context = contextParams, echo = false)
+        val llmParams     = LlmParams(context = contextParams, echo = false, predictTokens = 1024)
         val botName       = "Nyetbot"
         val userPrefix    = "$$"
         val inputPrefix   = ": "
