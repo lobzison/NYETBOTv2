@@ -21,14 +21,16 @@ import nyetbot.Config.LlmConfig
 import cats.effect.std.Console
 import nyetbot.service.TranslationService
 import nyetbot.service.TransliterationService
+import cats.effect.std.Mutex
 
 trait LlmFunctionality[F[_]]:
     def reply: Scenario[F, Unit]
 
-class LlmFunctionalityImpl[F[_]: Monad: TelegramClient: Console: Random](
+class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Random](
     service: LlmService[F],
     translationService: TranslationService[F],
     queue: Queue[F, LlmContextMessage],
+    mutex: Mutex[F],
     config: LlmConfig
 ) extends LlmFunctionality[F]:
 
@@ -72,15 +74,16 @@ class LlmFunctionalityImpl[F[_]: Monad: TelegramClient: Console: Random](
     override def reply: Scenario[F, Unit] =
         for
             msg <- Scenario.expect(textMessage)
-            _   <- Scenario.eval(predictReply(msg))
+            _   <- Scenario.eval(mutex.lock.surround(predictReply(msg)))
         yield ()
 
 object LlmFunctionalityImpl:
-    def mk[F[_]: Monad: TelegramClient: Console: Random](
+    def mk[F[_]: Concurrent: TelegramClient: Console: Random](
         service: LlmService[F],
         translationService: TranslationService[F],
         config: LlmConfig
-    )(using GenConcurrent[F, ?]): F[LlmFunctionalityImpl[F]] =
-        Queue
-            .circularBuffer[F, LlmContextMessage](10)
-            .map(q => LlmFunctionalityImpl[F](service, translationService, q, config))
+    ): F[LlmFunctionalityImpl[F]] =
+        for
+            m <- Mutex[F]
+            q <- Queue.circularBuffer[F, LlmContextMessage](10)
+        yield LlmFunctionalityImpl[F](service, translationService, q, m, config)
