@@ -35,7 +35,7 @@ class LlmServiceImpl[F[_]: Sync: Console](config: Config.LlmConfig) extends LlmS
         List(
           config.promptPrefix,
           "\n",
-          userInputContext,
+          userInputContext + s". ${config.botName} what do you think about it?",
           s"${config.userPrefix}${config.botName}${config.inputPrefix}"
         ).mkString("\n")
 
