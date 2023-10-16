@@ -85,5 +85,5 @@ object LlmFunctionalityImpl:
     ): F[LlmFunctionalityImpl[F]] =
         for
             m <- Mutex[F]
-            q <- Queue.circularBuffer[F, LlmContextMessage](10)
+            q <- Queue.circularBuffer[F, LlmContextMessage](15)
         yield LlmFunctionalityImpl[F](service, translationService, q, m, config)
