@@ -67,6 +67,6 @@ object Main extends IOApp.Simple:
     def app(scenarios: List[Scenario[IO, Unit]])(using TelegramClient[IO]): IO[Unit] =
         val prog = Bot.polling[IO].follow(scenarios*).compile.drain
         prog.recoverWith { case NonFatal(e) =>
-            IO.println(s"Died with $e, restarting") >>
+            IO.println(s"Died with $e, restarting") >> IO.delay(e.printStackTrace()) >>
                 IO.sleep(1.minute) >> app(scenarios)
         }
