@@ -12,21 +12,23 @@ import canoe.models.messages.TextMessage
 import nyetbot.utils.StreamUtils
 
 trait LlmService[F[_]]:
-    def model: Resource[F, Llm]
     def predict(context: List[LlmContextMessage]): F[String]
 
 object LlmService:
-    def apply[F[_]: Sync: Console](config: Config.LlmConfig): F[LlmService[F]] =
-        val loadLib: F[Unit] =
+    def apply[F[_]: Sync: Console](config: Config.LlmConfig): Resource[F, LlmService[F]] =
+        val model: Resource[F, Llm] =
+            val loadModel = Console[F].println("Start loading llm") >> Sync[F].delay(
+              Llm(model = config.modelPath, params = config.contextParams)
+            )
+            Resource.make(loadModel)(m =>
+                Console[F].println("Closing LLM") >> Sync[F].delay(m.close())
+            )
+        val loadLib: F[Unit]        =
             Sync[F].delay(System.load(config.llibPath))
-        loadLib.as(new LlmServiceImpl[F](config))
+        model.evalMap(model => loadLib.as(new LlmServiceImpl[F](config, model)))
 
-class LlmServiceImpl[F[_]: Sync: Console](config: Config.LlmConfig) extends LlmService[F]:
-    override def model: Resource[F, Llm] =
-        val loadModel = Console[F].println("Start loading llm") >> Sync[F].delay(
-          Llm(model = config.modelPath, params = config.contextParams)
-        )
-        Resource.make(loadModel)(m => Console[F].println("Closing LLM") >> Sync[F].delay(m.close()))
+class LlmServiceImpl[F[_]: Sync: Console](config: Config.LlmConfig, model: Llm)
+    extends LlmService[F]:
 
     private def buildPrompt(context: List[LlmContextMessage]): String =
         val userInputContext = context
@@ -41,17 +43,15 @@ class LlmServiceImpl[F[_]: Sync: Console](config: Config.LlmConfig) extends LlmS
 
     override def predict(context: List[LlmContextMessage]): F[String] =
         val fullPrompt = buildPrompt(context)
-        model.use(llm =>
-            for
-                _        <- Console[F].println(fullPrompt)
-                tryLlm   <- Sync[F].delay(llm(fullPrompt, config.llmParams))
-                lazyList <- Sync[F].fromTry(tryLlm)
-                _        <- Console[F].println("Start prediction")
-                stream    = Stream.fromBlockingIterator(lazyList.iterator, 1)
-                res      <- stream
-                                .evalMap(m => Console[F].println(s""""$m"""").as(m))
-                                .through(StreamUtils.stopAt(config.userPrefix))
-                                .compile
-                                .foldMonoid
-            yield res
-        )
+        for
+            _        <- Console[F].println(fullPrompt)
+            tryLlm   <- Sync[F].delay(model(fullPrompt, config.llmParams))
+            lazyList <- Sync[F].fromTry(tryLlm)
+            _        <- Console[F].println("Start prediction")
+            stream    = Stream.fromBlockingIterator(lazyList.iterator, 1)
+            res      <- stream
+                            .evalMap(m => Console[F].println(s""""$m"""").as(m))
+                            .through(StreamUtils.stopAt(config.userPrefix))
+                            .compile
+                            .foldMonoid
+        yield res
