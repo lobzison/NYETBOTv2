@@ -23,34 +23,25 @@ import concurrent.duration.DurationInt
 
 object Main extends IOApp.Simple:
     def run =
-        dependencies.use { case (given TelegramClient[IO], config, fly4s, db, client, llmService) =>
+        dependencies.use { case (given TelegramClient[IO], config, fly4s, db, client) =>
             for
-                scenarios <- buildScenarios(config, fly4s, db, client, llmService)
+                scenarios <- buildScenarios(config, fly4s, db, client)
                 _         <- app(scenarios)
             yield ()
         }
 
-    val dependencies: Resource[
-      IO,
-      (TelegramClient[IO], Config, Fly4s[IO], Session[IO], Client[IO], LlmService[IO])
-    ] =
+    val dependencies
+        : Resource[IO, (TelegramClient[IO], Config, Fly4s[IO], Session[IO], Client[IO])] =
         implicit val noopTracer: Tracer[IO] = Tracer.noop
         for
-            config     <- Config.configResource[IO]
-            tg         <- TelegramClient.global[IO](config.botToken)
-            fly4s      <- fly4sRes[IO](config.dbConfig)
-            db         <- buildSessionResource[IO](config.dbConfig)
-            client     <- BlazeClientBuilder[IO].resource
-            llmService <- LlmService[IO](config.llmConfig)
-        yield (tg, config, fly4s, db, client, llmService)
+            config <- Config.configResource[IO]
+            tg     <- TelegramClient.global[IO](config.botToken)
+            fly4s  <- fly4sRes[IO](config.dbConfig)
+            db     <- buildSessionResource[IO](config.dbConfig)
+            client <- BlazeClientBuilder[IO].resource
+        yield (tg, config, fly4s, db, client)
 
-    def buildScenarios(
-        config: Config,
-        fly4s: Fly4s[IO],
-        db: Session[IO],
-        client: Client[IO],
-        llmService: LlmService[IO]
-    )(using
+    def buildScenarios(config: Config, fly4s: Fly4s[IO], db: Session[IO], client: Client[IO])(using
         TelegramClient[IO]
     ): IO[List[Scenario[IO, Unit]]] =
         for
@@ -66,6 +57,7 @@ object Main extends IOApp.Simple:
             // translation
             translationService = DeeplTranslationService[IO](client, config.translateConfig)
             // LLM
+            llmService        <- LlmService[IO](config.llmConfig)
             llm               <- LlmFunctionalityImpl.mk[IO](llmService, translationService, config.llmConfig)
             _                 <- IO.println("Ready")
         yield List(
