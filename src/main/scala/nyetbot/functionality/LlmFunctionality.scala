@@ -51,7 +51,7 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
             if s.nonEmpty then
                 msg.chat
                     .send(
-                      TransliterationService.transliterate(s).toLowerCase,
+                      s,
                       replyToMessageId = Some(msg.messageId)
                     )
                     .void
