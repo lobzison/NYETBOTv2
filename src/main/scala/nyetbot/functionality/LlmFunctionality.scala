@@ -69,6 +69,7 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
             _              <- queue.tryOfferN(msgs)
             _              <- queue.offer(LlmContextMessage(config.userPrefix + config.botName, reply))
             _              <- sendIfNotEmpty(reply.trim)
+            _               = throw new Throwable("forgive me father, for what I'm about to yabadaba do")
         yield ()
 
     override def reply: Scenario[F, Unit] =
