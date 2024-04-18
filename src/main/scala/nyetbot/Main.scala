@@ -58,7 +58,9 @@ object Main extends IOApp.Simple:
             translationService = DeeplTranslationService[IO](client, config.translateConfig)
             // LLM
             llmService        <- LlmService[IO](config.llmConfig)
-            llm               <- LlmFunctionalityImpl.mk[IO](llmService, translationService, config.llmConfig)
+            // Ollama
+            ollamaService      = OllamaService[IO](client, config.ollamaConfig, config.llmConfig)
+            llm               <- LlmFunctionalityImpl.mk[IO](ollamaService, translationService, config.llmConfig)
             _                 <- IO.println("Ready")
         yield List(
           meme.triggerMemeScenario
