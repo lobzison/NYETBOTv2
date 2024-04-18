@@ -71,7 +71,7 @@ class OllamaService[F[_]: Async](client: Client[F], config: Config.OllamaConfig,
         val body =
             json""" { "model": "NYETBOTv1", "prompt": $messages, "stream": false } """
 
-        val a = Uri.unsafeFromString(s"https://${config.uri}/api/generate")
+        val a = Uri.unsafeFromString(s"http://${config.uri}/api/generate")
         val request = Request[F](method = POST).withUri(a).withEntity(body)
 
         client.run(request).use{ res =>
