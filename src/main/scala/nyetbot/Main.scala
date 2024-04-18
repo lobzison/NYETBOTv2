@@ -56,8 +56,6 @@ object Main extends IOApp.Simple:
             meme               = MemeFunctionalityImpl[IO](service)
             // translation
             translationService = DeeplTranslationService[IO](client, config.translateConfig)
-            // LLM
-            llmService        <- LlmService[IO](config.llmConfig)
             // Ollama
             ollamaService      = OllamaService[IO](client, config.ollamaConfig, config.llmConfig)
             llm               <- LlmFunctionalityImpl.mk[IO](ollamaService, translationService, config.llmConfig)
