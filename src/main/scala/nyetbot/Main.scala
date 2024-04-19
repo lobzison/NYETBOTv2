@@ -38,7 +38,10 @@ object Main extends IOApp.Simple:
             tg     <- TelegramClient.global[IO](config.botToken)
             fly4s  <- fly4sRes[IO](config.dbConfig)
             db     <- buildSessionResource[IO](config.dbConfig)
-            client <- BlazeClientBuilder[IO].resource
+            client <- BlazeClientBuilder[IO]
+                          .withRequestTimeout(7.minute)
+                          .withIdleTimeout(7.minute)
+                          .resource
         yield (tg, config, fly4s, db, client)
 
     def buildScenarios(config: Config, fly4s: Fly4s[IO], db: Session[IO], client: Client[IO])(using
@@ -56,9 +59,9 @@ object Main extends IOApp.Simple:
             meme               = MemeFunctionalityImpl[IO](service)
             // translation
             translationService = DeeplTranslationService[IO](client, config.translateConfig)
-            // LLM
-            llmService        <- LlmService[IO](config.llmConfig)
-            llm               <- LlmFunctionalityImpl.mk[IO](llmService, translationService, config.llmConfig)
+            // Ollama
+            ollamaService      = OllamaService[IO](client, config.ollamaConfig, config.llmConfig)
+            llm               <- LlmFunctionalityImpl.mk[IO](ollamaService, translationService, config.llmConfig)
             _                 <- IO.println("Ready")
         yield List(
           meme.triggerMemeScenario

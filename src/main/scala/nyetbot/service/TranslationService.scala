@@ -54,7 +54,6 @@ class DeeplTranslationService[F[_]: Async: MonadCancelThrow](
         val req  = Request[F](uri = config.uri, headers = Headers(List(auth))).withEntity(body)
         client.run(req).use { r =>
             r.decodeJson[Json].flatMap { j =>
-                print(j)
                 MonadCancelThrow[F]
                     .fromEither(
                       j.hcursor.downField("translations").as[List[Translation]]

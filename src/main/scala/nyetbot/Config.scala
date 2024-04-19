@@ -3,10 +3,13 @@ package nyetbot
 import cats.effect.kernel.Sync
 import cats.implicits.*
 import cats.*
+
 import java.net.URI
 import cats.effect.kernel.Resource
 import com.donderom.llm4s.*
-import java.nio.file.{Paths, Path}
+import nyetbot.Config.OllamaConfig
+
+import java.nio.file.{Path, Paths}
 import org.http4s.implicits.*
 import org.http4s.Uri
 
@@ -14,7 +17,8 @@ case class Config(
     botToken: String,
     dbConfig: Config.DbConfig,
     llmConfig: Config.LlmConfig,
-    translateConfig: Config.TranslateConfig
+    translateConfig: Config.TranslateConfig,
+    ollamaConfig: OllamaConfig
 )
 
 object Config:
@@ -30,6 +34,10 @@ object Config:
         llmParams: LlmParams,
         llmMessageEvery: Int
     )
+
+    case class OllamaConfig(
+        uri: String
+   )
 
     case class DbConfig(
         dbHost: String,
@@ -56,13 +64,15 @@ object Config:
             libllamaPath    <- Sync[F].delay(sys.env("LIBLLAMA"))
             weightsPath     <- Sync[F].delay(sys.env("WEIGHTS"))
             llmMessageEvery <- Sync[F].delay(sys.env("LLM_MESSAGE_EVERY").toInt)
+            ollamaDomain    <- Sync[F].delay(sys.env("OLLAMA_DOMAIN"))
         yield buildConfig(
           botToken,
           fullUrl,
           translateKey,
           libllamaPath,
           weightsPath,
-          llmMessageEvery
+          llmMessageEvery,
+          ollamaDomain
         )
 
     def buildConfig(
@@ -71,17 +81,20 @@ object Config:
         translateKey: String,
         libllamaPath: String,
         weightsPath: String,
-        llmMessageEvery: Int
+        llmMessageEvery: Int,
+        ollamaDomain: String
     ) =
         val dbConfig        = buildDbConfig(fullDbUrl)
         val llmConfig       = buildLlmConfig(libllamaPath, weightsPath, llmMessageEvery)
         val translateConfig =
             TranslateConfig(uri"https://api-free.deepl.com/v2/translate", translateKey)
+        val ollama = OllamaConfig(s"http://$ollamaDomain:11434")
         Config(
           botToken,
           dbConfig,
           llmConfig,
-          translateConfig
+          translateConfig,
+          ollama
         )
 
     def buildDbConfig(fullDbUrl: String): DbConfig =

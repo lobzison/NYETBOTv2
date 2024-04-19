@@ -22,11 +22,14 @@ import cats.effect.std.Console
 import nyetbot.service.TranslationService
 import nyetbot.service.TransliterationService
 import cats.effect.std.Mutex
+import concurrent.duration.DurationInt
+import cats.effect.implicits.*
+import cats.implicits.*
 
 trait LlmFunctionality[F[_]]:
     def reply: Scenario[F, Unit]
 
-class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Random](
+class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Random: Temporal](
     service: LlmService[F],
     translationService: TranslationService[F],
     queue: Queue[F, LlmContextMessage],
@@ -57,20 +60,22 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
                     .void
             else Monad[F].unit
 
-        for
+        def typing: F[Unit] =
+            msg.chat.setAction[F](ChatAction.Typing).void >> Temporal[F].sleep(4.seconds) >> typing
+
+        val translateAndReply = for
             // Amazing efficiency 🤦‍♂️
             msgs           <- queue.tryTakeN(None)
             translatedMsgs <-
                 translationService.translateMessageBatch(msgs, TranslationService.TargetLang.EN)
-            _              <- Console[F].println(msgs)
-            _              <- Console[F].println(translatedMsgs)
             replyEng       <- service.predict(translatedMsgs)
             reply          <- translationService.translate(replyEng, TranslationService.TargetLang.RU)
             _              <- queue.tryOfferN(msgs)
             _              <- queue.offer(LlmContextMessage(config.userPrefix + config.botName, reply))
             _              <- sendIfNotEmpty(reply.trim)
-            _               = throw new InterruptedException("forgive me father, for what I'm about to yabadaba do")
         yield ()
+        
+        translateAndReply.race(typing).void
 
     override def reply: Scenario[F, Unit] =
         for
@@ -79,12 +84,12 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
         yield ()
 
 object LlmFunctionalityImpl:
-    def mk[F[_]: Concurrent: TelegramClient: Console: Random](
+    def mk[F[_]: Concurrent: TelegramClient: Console: Random: Temporal](
         service: LlmService[F],
         translationService: TranslationService[F],
         config: LlmConfig
     ): F[LlmFunctionalityImpl[F]] =
         for
             m <- Mutex[F]
-            q <- Queue.circularBuffer[F, LlmContextMessage](5)
+            q <- Queue.circularBuffer[F, LlmContextMessage](20)
         yield LlmFunctionalityImpl[F](service, translationService, q, m, config)
