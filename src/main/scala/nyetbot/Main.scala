@@ -38,7 +38,10 @@ object Main extends IOApp.Simple:
             tg     <- TelegramClient.global[IO](config.botToken)
             fly4s  <- fly4sRes[IO](config.dbConfig)
             db     <- buildSessionResource[IO](config.dbConfig)
-            client <- BlazeClientBuilder[IO].withRequestTimeout(2.minute).resource
+            client <- BlazeClientBuilder[IO]
+                          .withRequestTimeout(2.minute)
+                          .withIdleTimeout(2.minute)
+                          .resource
         yield (tg, config, fly4s, db, client)
 
     def buildScenarios(config: Config, fly4s: Fly4s[IO], db: Session[IO], client: Client[IO])(using

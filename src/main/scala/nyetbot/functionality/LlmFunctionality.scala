@@ -63,8 +63,6 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
             msgs           <- queue.tryTakeN(None)
             translatedMsgs <-
                 translationService.translateMessageBatch(msgs, TranslationService.TargetLang.EN)
-            _              <- Console[F].println(msgs)
-            _              <- Console[F].println(translatedMsgs)
             replyEng       <- service.predict(translatedMsgs)
             reply          <- translationService.translate(replyEng, TranslationService.TargetLang.RU)
             _              <- queue.tryOfferN(msgs)
