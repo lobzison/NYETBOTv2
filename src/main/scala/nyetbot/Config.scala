@@ -88,7 +88,7 @@ object Config:
         val llmConfig       = buildLlmConfig(libllamaPath, weightsPath, llmMessageEvery)
         val translateConfig =
             TranslateConfig(uri"https://api-free.deepl.com/v2/translate", translateKey)
-        val ollama = OllamaConfig(s"https://$ollamaDomain")
+        val ollama = OllamaConfig(s"http://$ollamaDomain:11434")
         Config(
           botToken,
           dbConfig,
