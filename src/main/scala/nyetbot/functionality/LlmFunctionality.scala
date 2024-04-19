@@ -60,7 +60,7 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
                     .void
             else Monad[F].unit
 
-        val typing: F[Unit] =
+        def typing: F[Unit] =
             msg.chat.setAction[F](ChatAction.Typing).void >> Temporal[F].sleep(4.seconds) >> typing
 
         val translateAndReply = for
@@ -84,7 +84,7 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
         yield ()
 
 object LlmFunctionalityImpl:
-    def mk[F[_]: Concurrent: TelegramClient: Console: Random](
+    def mk[F[_]: Concurrent: TelegramClient: Console: Random: Temporal](
         service: LlmService[F],
         translationService: TranslationService[F],
         config: LlmConfig
