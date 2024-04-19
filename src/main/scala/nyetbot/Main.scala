@@ -39,8 +39,8 @@ object Main extends IOApp.Simple:
             fly4s  <- fly4sRes[IO](config.dbConfig)
             db     <- buildSessionResource[IO](config.dbConfig)
             client <- BlazeClientBuilder[IO]
-                          .withRequestTimeout(2.minute)
-                          .withIdleTimeout(2.minute)
+                          .withRequestTimeout(7.minute)
+                          .withIdleTimeout(7.minute)
                           .resource
         yield (tg, config, fly4s, db, client)
 
