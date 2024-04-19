@@ -22,11 +22,14 @@ import cats.effect.std.Console
 import nyetbot.service.TranslationService
 import nyetbot.service.TransliterationService
 import cats.effect.std.Mutex
+import concurrent.duration.DurationInt
+import cats.effect.implicits.*
+import cats.implicits.*
 
 trait LlmFunctionality[F[_]]:
     def reply: Scenario[F, Unit]
 
-class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Random](
+class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Random: Temporal](
     service: LlmService[F],
     translationService: TranslationService[F],
     queue: Queue[F, LlmContextMessage],
@@ -57,9 +60,11 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
                     .void
             else Monad[F].unit
 
-        for
+        val typing: F[Unit] =
+            msg.chat.setAction[F](ChatAction.Typing).void >> Temporal[F].sleep(4.seconds) >> typing
+
+        val translateAndReply = for
             // Amazing efficiency 🤦‍♂️
-            _              <- msg.chat.setAction(ChatAction.Typing)
             msgs           <- queue.tryTakeN(None)
             translatedMsgs <-
                 translationService.translateMessageBatch(msgs, TranslationService.TargetLang.EN)
@@ -69,6 +74,8 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
             _              <- queue.offer(LlmContextMessage(config.userPrefix + config.botName, reply))
             _              <- sendIfNotEmpty(reply.trim)
         yield ()
+        
+        translateAndReply.race(typing).void
 
     override def reply: Scenario[F, Unit] =
         for

@@ -49,12 +49,11 @@ class LlmServiceImpl[F[_] : Sync : Console](config: Config.LlmConfig) extends Ll
         _ <- Console[F].println(fullPrompt)
         tryLlm <- Sync[F].delay(llm(fullPrompt, config.llmParams))
         lazyList <- Sync[F].fromTry(tryLlm)
-        _ <- Console[F].println("Start prediction")
         res <- Sync[F].blocking(lazyList.foldLeft("")(_ + _))
       yield res
     )
 
-class OllamaService[F[_] : Async](client: Client[F], config: Config.OllamaConfig, llmConfig: Config.LlmConfig) extends LlmService[F]:
+class OllamaService[F[_] : Async: Console](client: Client[F], config: Config.OllamaConfig, llmConfig: Config.LlmConfig) extends LlmService[F]:
 
   private def buildPrompt(context: List[LlmContextMessage]): String =
     val userInputContext = context
@@ -75,11 +74,12 @@ class OllamaService[F[_] : Async](client: Client[F], config: Config.OllamaConfig
     val uri = Uri.unsafeFromString(s"${config.uri}/api/generate")
     val request = Request[F](method = POST).withUri(uri).withEntity(body)
 
-    client.run(request).use { res =>
-      res.decodeJson[Json].flatMap { j =>
-        MonadCancelThrow[F]
-          .fromEither(
-            j.hcursor.downField("response").as[String]
-          )
-      }
+    Console[F].println("Start prediction") *>
+      client.run(request).use { res =>
+          res.decodeJson[Json].flatMap { j =>
+            MonadCancelThrow[F]
+              .fromEither(
+                j.hcursor.downField("response").as[String]
+              )
+          }
     }
