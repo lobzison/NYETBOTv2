@@ -62,7 +62,7 @@ class OllamaService[F[_] : Async: Console](client: Client[F], config: Config.Oll
     List(
       llmConfig.promptPrefix,
       "\n\n",
-      userInputContext + s". Hey motherfucker ${llmConfig.botName}, what do you think about it?",
+      userInputContext + s". Hey ${llmConfig.botName}, what do you think about it?",
       s"${llmConfig.userPrefix}${llmConfig.botName}${llmConfig.inputPrefix}"
     ).mkString("\n")
 
