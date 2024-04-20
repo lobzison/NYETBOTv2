@@ -16,7 +16,7 @@ import org.http4s.client.Client
 import org.http4s.circe.*
 
 trait LlmService[F[_]]:
-  def predict(context: List[LlmContextMessage]): F[String]
+  def predict(context: List[LlmContextMessage], skipPromptInjection: Boolean): F[String]
 
 object LlmService:
   def apply[F[_] : Sync : Console](config: Config.LlmConfig): F[LlmService[F]] =
@@ -42,7 +42,7 @@ class LlmServiceImpl[F[_] : Sync : Console](config: Config.LlmConfig) extends Ll
       s"${config.userPrefix}${config.botName}${config.inputPrefix}"
     ).mkString("\n")
 
-  override def predict(context: List[LlmContextMessage]): F[String] =
+  override def predict(context: List[LlmContextMessage], skipPromptInjection: Boolean): F[String] =
     val fullPrompt = buildPrompt(context)
     model.use(llm =>
       for
@@ -55,29 +55,29 @@ class LlmServiceImpl[F[_] : Sync : Console](config: Config.LlmConfig) extends Ll
 
 class OllamaService[F[_] : Async: Console](client: Client[F], config: Config.OllamaConfig, llmConfig: Config.LlmConfig) extends LlmService[F]:
 
-  private def buildPrompt(context: List[LlmContextMessage]): String =
-    val userInputContext = context
-      .map(m => s"${m.userName}${llmConfig.inputPrefix}${m.text}")
-      .mkString("\n")
-    List(
-      userInputContext + s". Hey ${llmConfig.botName}, what do you think about it?",
-      s"${llmConfig.userPrefix}${llmConfig.botName}${llmConfig.inputPrefix}"
-    ).mkString("\n")
+      private def buildPrompt(context: List[LlmContextMessage], skipPromptInjection: Boolean): String =
+        val userInputContext = context
+          .map(m => s"${m.userName}${llmConfig.inputPrefix}${m.text}")
+          .mkString("\n")
+        if skipPromptInjection then
+            userInputContext.replace(llmConfig.botAlias, llmConfig.botName)
+        else
+            userInputContext + s". Hey ${llmConfig.botName}, what do you think about it?"
 
-  override def predict(context: List[LlmContextMessage]): F[String] =
-    val messages: String = buildPrompt(context)
-    val body =
-      json""" { "model": "NYETBOTv1", "prompt": $messages, "stream": false } """
+      override def predict(context: List[LlmContextMessage], skipPromptInjection: Boolean): F[String] =
+        val messages: String = buildPrompt(context, skipPromptInjection)
+        val body =
+          json""" { "model": "NYETBOTv1", "prompt": $messages, "stream": false } """
 
-    val uri = Uri.unsafeFromString(s"${config.uri}/api/generate")
-    val request = Request[F](method = POST).withUri(uri).withEntity(body)
+        val uri = Uri.unsafeFromString(s"${config.uri}/api/generate")
+        val request = Request[F](method = POST).withUri(uri).withEntity(body)
 
-    Console[F].println("Start prediction") *>
-      client.run(request).use { res =>
-          res.decodeJson[Json].flatMap { j =>
-            MonadCancelThrow[F]
-              .fromEither(
-                j.hcursor.downField("response").as[String]
+        Console[F].println("Start prediction") *>
+          client.run(request).use { res =>
+              res.decodeJson[Json].flatMap { j =>
+                MonadCancelThrow[F]
+                  .fromEither(
+                    j.hcursor.downField("response").as[String]
               )
           }
     }

@@ -32,7 +32,8 @@ object Config:
         promptPrefix: String,
         promptSuffix: String,
         llmParams: LlmParams,
-        llmMessageEvery: Int
+        llmMessageEvery: Int,
+        botAlias: String
     )
 
     case class OllamaConfig(
@@ -111,6 +112,7 @@ object Config:
         val weightsPath   = Paths.get(weightsPathStr)
         val contextParams = ContextParams(contextSize = 2048, threads = 6)
         val botName       = "Nyetbot"
+        val botAlias      = "@nyetterbot"
         val userPrefix    = "$$$"
         val llmParams     = LlmParams(
           context = contextParams,
@@ -136,7 +138,8 @@ If $botName can't, he will try to bully the last user, and use swear words, whil
           promptPrefix,
           promptSuffix,
           llmParams,
-          llmMessageEvery
+          llmMessageEvery,
+          botAlias
         )
 
     def configResource[F[_]: Sync]: Resource[F, Config] =

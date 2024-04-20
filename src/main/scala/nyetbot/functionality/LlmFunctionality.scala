@@ -46,11 +46,12 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
     def triggerReplyWithChance(msg: TextMessage): F[Unit] =
         for
             c <- Random[F].betweenInt(0, config.llmMessageEvery)
-            _ <- if c == 0 || msg.text.contains("@nyetterbot") then triggerReply(msg)
+            tagged = msg.text.contains(config.botAlias)
+            _ <- if c == 0 || tagged then triggerReply(msg, tagged)
                  else Monad[F].unit
         yield ()
 
-    def triggerReply(msg: TextMessage): F[Unit] =
+    def triggerReply(msg: TextMessage, tagged: Boolean): F[Unit] =
         def sendIfNotEmpty(s: String) =
             if s.nonEmpty then
                 msg.chat
@@ -69,7 +70,7 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
             msgs           <- queue.tryTakeN(None)
             translatedMsgs <-
                 translationService.translateMessageBatch(msgs, TranslationService.TargetLang.EN)
-            replyEng       <- service.predict(translatedMsgs)
+            replyEng       <- service.predict(translatedMsgs, tagged)
             reply          <- translationService.translate(replyEng, TranslationService.TargetLang.RU)
             _              <- queue.tryOfferN(msgs)
             _              <- queue.offer(LlmContextMessage(config.userPrefix + config.botName, reply))
