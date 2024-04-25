@@ -3,5 +3,5 @@ FROM ollama/ollama as ollama
 COPY ./Modelfile ./Modelfile
 EXPOSE 11434
 
-RUN ollama serve & sleep 5 && ollama create NYETBOTv1 -f ./Modelfile
-
+RUN sudo sysctl -w vm.swappiness=1
+RUN ollama serve & sleep 20 && ollama create NYETBOTv1 -f ./Modelfile
