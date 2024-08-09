@@ -1,4 +1,4 @@
-FROM dolphin-mistral
+FROM dolphin-llama3:8b
 
 TEMPLATE "{{ .System }}
 CHAT_MESSAGES:
