@@ -1,16 +1,12 @@
-package nyetbot.vault
+package nyetbot.repo
 
-import cats.effect.*
-import skunk.*
-import skunk.implicits.*
-import skunk.codec.all.*
-import skunk.SSL
-import nyetbot.Config
 import cats.*
-import cats.implicits.*
-import fs2.io.net.Network
+import cats.effect.*
 import cats.effect.std.Console
+import fs2.io.net.Network
+import nyetbot.Config
 import org.typelevel.otel4s.trace.Tracer
+import skunk.*
 
 def buildSessionResource[F[_]: Temporal: Tracer: Network: Console](
     config: Config.DbConfig

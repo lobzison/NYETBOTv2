@@ -1,32 +1,29 @@
 package nyetbot.service
 
-import nyetbot.model.LlmContextMessage
-import cats.effect.kernel.Sync
-import org.http4s.client.Client
-import org.http4s.Request
-import org.http4s.implicits.*
+import cats.effect.IO
+import cats.implicits.*
+import io.circe.Decoder
+import io.circe.Json
+import io.circe.literal.*
 import nyetbot.Config
+import nyetbot.model.LlmContextMessage
+import nyetbot.service.TranslationService.TargetLang
+import nyetbot.service.TranslationService.Translation
+import org.http4s.Credentials
 import org.http4s.Header
 import org.http4s.Headers
-import org.http4s.Credentials
+import org.http4s.Request
+import org.http4s.circe.*
+import org.http4s.client.Client
 import org.http4s.headers.Authorization
 import org.typelevel.ci.CIString
-import io.circe.literal.*
-import nyetbot.service.TranslationService.{TargetLang, Translation}
-import org.http4s.circe.*
-import io.circe.Json
-import cats.effect.kernel.Async
-import cats.implicits.*
-import cats.effect.MonadCancelThrow
-import cats.effect.kernel.syntax.MonadCancelSyntax
-import io.circe.Decoder
 
-trait TranslationService[F[_]]:
-    def translate(s: String, targetLang: TargetLang): F[String]
+trait TranslationService:
+    def translate(s: String, targetLang: TargetLang): IO[String]
     def translateMessageBatch(
         q: List[LlmContextMessage],
         targetLang: TargetLang
-    ): F[List[LlmContextMessage]]
+    ): IO[List[LlmContextMessage]]
 
 object TranslationService:
     enum TargetLang:
@@ -38,11 +35,11 @@ object TranslationService:
         implicit val translationDecoder: Decoder[Translation] =
             Decoder.forProduct1("text")(Translation.apply)
 
-class DeeplTranslationService[F[_]: Async: MonadCancelThrow](
-    client: Client[F],
+class DeeplTranslationService(
+    client: Client[IO],
     config: Config.TranslateConfig
-) extends TranslationService[F]:
-    private def translateBatch(messages: List[String], targetLang: TargetLang): F[List[String]] =
+) extends TranslationService:
+    private def translateBatch(messages: List[String], targetLang: TargetLang): IO[List[String]] =
         val auth = Authorization(Credentials.Token(CIString("DeepL-Auth-Key"), config.token))
         val body =
             json"""{
@@ -51,23 +48,21 @@ class DeeplTranslationService[F[_]: Async: MonadCancelThrow](
                 "formality": "prefer_less"
 
             }"""
-        val req  = Request[F](uri = config.uri, headers = Headers(List(auth))).withEntity(body)
+        val req  = Request[IO](uri = config.uri, headers = Headers(List(auth))).withEntity(body)
         client.run(req).use { r =>
             r.decodeJson[Json].flatMap { j =>
-                MonadCancelThrow[F]
-                    .fromEither(
-                      j.hcursor.downField("translations").as[List[Translation]]
-                    )
-                    .map(_.map(_.text))
+                IO.fromEither(
+                  j.hcursor.downField("translations").as[List[Translation]]
+                ).map(_.map(_.text))
             }
         }
-    override def translate(s: String, targetLang: TargetLang): F[String]                        =
+    override def translate(s: String, targetLang: TargetLang): IO[String]                        =
         translateBatch(List(s), targetLang).map(_.head)
 
     override def translateMessageBatch(
         q: List[LlmContextMessage],
         targetLang: TargetLang
-    ): F[List[LlmContextMessage]] =
+    ): IO[List[LlmContextMessage]] =
         val textMessages = q.map(m => m.text)
         translateBatch(textMessages, targetLang).map(l =>
             l.zip(q).map { case (translated, LlmContextMessage(name, _)) =>

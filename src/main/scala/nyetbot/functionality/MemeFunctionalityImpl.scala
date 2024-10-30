@@ -1,23 +1,21 @@
 package nyetbot.functionality
 
-import canoe.api.Scenario
-import nyetbot.service.MemeService
-import cats.Monad
-import cats.implicits.*
-import cats.*
-import canoe.syntax.*
 import canoe.api.*
 import canoe.models.*
 import canoe.models.messages.*
-import nyetbot.model.{SupportedMemeType, MemeCreationRequest, MemeId}
-import nyetbot.model.Meme
-import scala.util.Try
+import canoe.syntax.*
+import cats.*
+import cats.effect.IO
+import cats.implicits.*
 import nyetbot.model.{*, given}
+import nyetbot.service.MemeService
 
-class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeService[F])
-    extends MemeFunctionality[F]
-    with Discard[F]:
-    def triggerMemeScenario: Scenario[F, Unit] =
+import scala.util.Try
+
+class MemeFunctionalityImpl(service: MemeService)(using TelegramClient[IO])
+    extends MemeFunctionality
+    with Discard[IO]:
+    def triggerMemeScenario: Scenario[IO, Unit] =
         for
             message       <- Scenario.expect(textMessage)
             maybeResponses = service.getMemeResponse(message.text)
@@ -25,26 +23,26 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
         yield ()
 
     private def memeSendingAction(
-        messagesF: F[List[SupportedMemeType]],
+        messagesF: IO[List[SupportedMemeType]],
         chat: Chat,
         replyTo: Int
-    ): F[Unit] =
+    ): IO[Unit] =
         for
             messages <- messagesF
-            res      <- messages.traverse(message => sendMeme(message, chat, replyTo))
+            _        <- messages.traverse(message => sendMeme(message, chat, replyTo))
         yield ()
 
-    private def sendMeme(meme: SupportedMemeType, chat: Chat, replyTo: Int): F[Unit] =
+    private def sendMeme(meme: SupportedMemeType, chat: Chat, replyTo: Int): IO[Unit] =
         chat.send(meme.toMessageContent, replyToMessageId = Some(replyTo)).void
 
-    def memeManagementScenarios: List[Scenario[F, Unit]] =
+    def memeManagementScenarios: List[Scenario[IO, Unit]] =
         List(
           addMemeScenario,
           showMemesScenario,
           deleteMemeScenario
         )
 
-    def addMemeScenario: Scenario[F, Unit] =
+    def addMemeScenario: Scenario[IO, Unit] =
         for
             chat           <- Scenario.expect(command("add_meme").chat)
             _              <-
@@ -83,29 +81,29 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
                 )
         yield ()
 
-    private def createMeme(trigger: String, meme: TelegramMessage, chance: Int): F[Option[Unit]] =
+    private def createMeme(trigger: String, meme: TelegramMessage, chance: Int): IO[Option[Unit]] =
         val memeTypeOpt = SupportedMemeType.fromTelegramMessage(meme)
         memeTypeOpt.traverse(memeType =>
             service.addMeme(MemeCreationRequest(trigger, memeType, chance))
         )
 
-    def showMemesScenario: Scenario[F, Unit] =
+    def showMemesScenario: Scenario[IO, Unit] =
         for
             chat <- Scenario.expect(command("show_memes").chat)
             _    <- Scenario.eval(showMemesAction(chat))
         yield ()
 
-    private def showMemesAction(chat: Chat): F[Unit] =
+    private def showMemesAction(chat: Chat): IO[Unit] =
         for
             memesTable <- service.showAllMemes
             _          <- chat.send(textContent(memesTable).copy(parseMode = Some(ParseMode.HTML)))
         yield ()
 
-    private def parseChance(chanceString: String): F[Int] =
-        for chanceParsed <- MonadThrow[F].fromTry(Try(chanceString.toInt))
+    private def parseChance(chanceString: String): IO[Int] =
+        for chanceParsed <- IO.fromTry(Try(chanceString.toInt))
         yield chanceParsed.max(1)
 
-    def deleteMemeScenario: Scenario[F, Unit] =
+    def deleteMemeScenario: Scenario[IO, Unit] =
         for
             chat     <- Scenario.expect(command("del_meme").chat)
             _        <- Scenario.eval(showMemesAction(chat))
@@ -118,8 +116,8 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
                         )
         yield ()
 
-    private def deleteMemeAction(idString: String): F[Unit] =
+    private def deleteMemeAction(idString: String): IO[Unit] =
         for
-            id  <- MonadThrow[F].fromTry(Try(idString.toInt))
-            res <- service.deleteMeme(MemeId(id))
+            id <- IO.fromTry(Try(idString.toInt))
+            _  <- service.deleteMeme(MemeId(id))
         yield ()

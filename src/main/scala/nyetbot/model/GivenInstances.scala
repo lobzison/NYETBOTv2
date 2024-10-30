@@ -1,10 +1,6 @@
 package nyetbot.model
 
 import cats.Show
-import cats.implicits.toShow
-import nyetbot.service.TableDrawer
-import cats.MonadThrow
-import cats.implicits.toFunctorOps
 
 given Show[Chance] with
     def show(c: Chance): String =

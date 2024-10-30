@@ -1,25 +1,24 @@
-package nyetbot.vault
+package nyetbot.repo
 
+import cats.*
+import cats.effect.IO
+import cats.effect.kernel.Ref
+import cats.implicits.*
+import nyetbot.model.MemeCreationRequest
 import nyetbot.model.MemeId
 import nyetbot.model.MemeRow
-import nyetbot.model.MemeCreationRequest
-import cats.effect.kernel.Ref
-import cats.Monad
 
-import cats.implicits.*
-import cats.*
-
-class MemeVaultInMemory[F[_]: Monad](ref: Ref[F, List[MemeRow]]) extends MemeVault[F]:
-    override def getAllMemes: F[List[MemeRow]]               =
+class MemeRepoInMemory(ref: Ref[IO, List[MemeRow]]) extends MemeRepo:
+    override def getAllMemes: IO[List[MemeRow]]               =
         ref.get
-    override def addMeme(meme: MemeCreationRequest): F[Unit] =
+    override def addMeme(meme: MemeCreationRequest): IO[Unit] =
         for
             currentMemes <- ref.get
             newId         = currentMemes.size + 1
             newMeme       = meme.toPersisted(MemeId(newId))
             _            <- ref.update(memeVault => memeVault :+ newMeme)
         yield ()
-    override def deleteMeme(memeId: MemeId): F[Unit]         =
+    override def deleteMeme(memeId: MemeId): IO[Unit]         =
         for
             currentState <- getAllMemes
             newState      = currentState.filterNot(_.id == memeId)

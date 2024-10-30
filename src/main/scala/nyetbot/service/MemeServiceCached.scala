@@ -1,23 +1,18 @@
 package nyetbot.service
-import nyetbot.service.MemeService
-import nyetbot.model.SupportedMemeType
-import cats.effect.kernel.Ref
-import nyetbot.model.*
-import nyetbot.vault.MemeVault
-import cats.Monad
-
-import cats.implicits.*
 import cats.*
-import cats.effect.kernel.Concurrent
-import nyetbot.model.MemeCreationRequest
+import cats.effect.IO
+import cats.effect.kernel.Ref
 import cats.effect.std.Random
+import cats.implicits.*
+import nyetbot.model.*
+import nyetbot.repo.MemeRepo
 
-class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: Ref[F, List[Meme]])
-    extends MemeService[F]:
+class MemeServiceCached(vault: MemeRepo, memesF: Ref[IO, List[Meme]])(using Random[IO])
+    extends MemeService:
 
-    override def getAllMemes: F[List[Meme]]                                   =
+    override def getAllMemes: IO[List[Meme]]                                   =
         memesF.get
-    override def getMemeResponse(message: String): F[List[SupportedMemeType]] =
+    override def getMemeResponse(message: String): IO[List[SupportedMemeType]] =
         val messageTokens = message.toLowerCase
         for
             memes          <- memesF.get
@@ -28,28 +23,28 @@ class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: R
             memesToSend     = triggeredMemes.map(_.body)
         yield memesToSend
 
-    private def shouldSendMeme(message: String)(meme: Meme): F[(Meme, Boolean)] =
+    private def shouldSendMeme(message: String)(meme: Meme): IO[(Meme, Boolean)] =
         for
-            r         <- Random[F].betweenInt(0, meme.chance.value)
+            r         <- Random[IO].betweenInt(0, meme.chance.value)
             shouldSend =
                 meme.trigger.value.matches(message) && (r == 0)
         yield (meme, shouldSend)
 
-    def addMeme(memeRequest: MemeCreationRequest): F[Unit] =
+    def addMeme(memeRequest: MemeCreationRequest): IO[Unit] =
         vault.addMeme(memeRequest) >> updateInMemoryRepresentation
 
-    def deleteMeme(id: MemeId): F[Unit] =
+    def deleteMeme(id: MemeId): IO[Unit] =
         vault.deleteMeme(id) >> updateInMemoryRepresentation
 
-    val updateInMemoryRepresentation: F[Unit] =
+    val updateInMemoryRepresentation: IO[Unit] =
         for
             memesPersisted <- vault.getAllMemes
-            memesParsed    <- memesPersisted.toMemes
+            memesParsed    <- memesPersisted.toMemes[IO]
             _              <- memesF.set(memesParsed)
         yield ()
 
-    def showAllMemes(using Show[Chance]): F[String] =
-        def buildDrawer(memes: List[Meme]): F[TableDrawer] =
+    def showAllMemes(using Show[Chance]): IO[String] =
+        def buildDrawer(memes: List[Meme]): IO[TableDrawer] =
             val header = List("id", "trigger", "chance of trigger")
             val body   = memes.map { m =>
                 List(
@@ -58,16 +53,16 @@ class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: R
                   m.chance.show
                 )
             }
-            TableDrawer.create[F](header.length, header :: body)
+            TableDrawer.create[IO](header.length, header :: body)
         for
             memes  <- getAllMemes
             drawer <- buildDrawer(memes)
         yield drawer.buildHtmlCodeTable
 
 object MemeServiceCached:
-    def apply[F[_]: Concurrent: Random](vault: MemeVault[F]): F[MemeService[F]] =
+    def apply(vault: MemeRepo)(using Random[IO]): IO[MemeService] =
         for
             memesPersisted <- vault.getAllMemes
-            memesParsed    <- memesPersisted.toMemes
-            ref            <- Ref.of[F, List[Meme]](memesParsed)
+            memesParsed    <- memesPersisted.toMemes[IO]
+            ref            <- Ref.of[IO, List[Meme]](memesParsed)
         yield new MemeServiceCached(vault, ref)

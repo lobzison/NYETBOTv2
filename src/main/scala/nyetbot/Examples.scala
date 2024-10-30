@@ -5,13 +5,7 @@ import canoe.api.models.ChatApi
 import canoe.models.*
 import canoe.models.messages.*
 import canoe.syntax.*
-import cats.Functor
-import cats.Monad
 import cats.*
-import cats.effect.IO
-import cats.effect.kernel.Async
-import cats.effect.std.Random
-import cats.implicits.*
 import cats.syntax.functor.toFunctorOps
 
 def greetings[F[_]: TelegramClient]: Scenario[F, Unit] =

@@ -1,30 +1,30 @@
 package nyetbot.functionality
 
-import canoe.api.Scenario
-import canoe.api.TelegramClient
-import cats.MonadThrow
-import cats.effect.std.Random
-import cats.implicits.*
-import cats.*
 import canoe.api.*
 import canoe.models.*
 import canoe.models.messages.*
 import canoe.syntax.*
+import cats.*
+import cats.effect.IO
+import cats.effect.std.Random
+import cats.implicits.*
+import nyetbot.model.{*, given}
 import nyetbot.service.SwearService
-import nyetbot.model.{given, *}
-import cats.effect.kernel.syntax.resource
+
 import scala.util.Try
 
-class SwearFunctionalityImpl[F[_]: TelegramClient: MonadThrow: Random](service: SwearService[F])
-    extends SwearFunctionality[F]
-    with Discard[F]:
-    override def scenario: Scenario[F, Unit] =
+class SwearFunctionalityImpl(service: SwearService)(using
+    TelegramClient[IO],
+    Random[IO]
+) extends SwearFunctionality
+    with Discard[IO]:
+    override def scenario: Scenario[IO, Unit] =
         for
             msg <- Scenario.expect(any)
             _   <- Scenario.eval(sendOptionalSwear(msg))
         yield ()
 
-    def scenarios: List[Scenario[F, Unit]] = List(
+    def scenarios: List[Scenario[IO, Unit]] = List(
       scenario,
       showSwear,
       showSwearGroups,
@@ -33,30 +33,30 @@ class SwearFunctionalityImpl[F[_]: TelegramClient: MonadThrow: Random](service: 
       deleteSwear
     )
 
-    def getOptionalSwear: F[Option[String]] =
+    def getOptionalSwear: IO[Option[String]] =
         service.getSwear.map(_.map(_.value))
 
-    def sendOptionalSwear(msg: TelegramMessage): F[Unit] =
+    def sendOptionalSwear(msg: TelegramMessage): IO[Unit] =
         for
             swear <- getOptionalSwear
-            _     <- swear.fold(Monad[F].unit)(swear =>
+            _     <- swear.fold(IO.unit)(swear =>
                          msg.chat.send(swear, replyToMessageId = Some(msg.messageId)).void
                      )
         yield ()
 
-    def showSwearGroups: Scenario[F, Unit] =
+    def showSwearGroups: Scenario[IO, Unit] =
         for
             chat <- Scenario.expect(command("show_swear_groups").chat)
             _    <- Scenario.eval(showSwearGroupsAction(chat))
         yield ()
 
-    private def showSwearGroupsAction(chat: Chat): F[Unit] =
+    private def showSwearGroupsAction(chat: Chat): IO[Unit] =
         for
             memesTable <- service.showSwearGroups
             _          <- chat.send(textContent(memesTable).copy(parseMode = Some(ParseMode.HTML)))
         yield ()
 
-    def showSwear: Scenario[F, Unit] =
+    def showSwear: Scenario[IO, Unit] =
         for
             chat     <- Scenario.expect(command("show_swears").chat)
             _        <- Scenario.eval(chat.send("Send swear group id"))
@@ -72,13 +72,13 @@ class SwearFunctionalityImpl[F[_]: TelegramClient: MonadThrow: Random](service: 
                         )
         yield ()
 
-    def showSwearAction(idString: String): F[String] =
+    def showSwearAction(idString: String): IO[String] =
         for
-            id     <- MonadThrow[F].fromTry(Try(idString.toInt))
+            id     <- IO.fromTry(Try(idString.toInt))
             swears <- service.showSwears(SwearGroupId(id))
         yield swears
 
-    def addSwearGroup: Scenario[F, Unit] =
+    def addSwearGroup: Scenario[IO, Unit] =
         for
             chat         <- Scenario.expect(command("add_swear_group").chat)
             _            <-
@@ -89,7 +89,7 @@ class SwearFunctionalityImpl[F[_]: TelegramClient: MonadThrow: Random](service: 
                   )
                 )
             chanceString <- Scenario.expect(text).handleDiscard
-            res          <- Scenario.eval(MonadThrow[F].fromTry(Try(chanceString.toInt))).attempt
+            res          <- Scenario.eval(IO.fromTry(Try(chanceString.toInt))).attempt
             _            <- res.fold(
                               _ => Scenario.eval(chat.send("Invalid chance, please send integer")),
                               chance =>
@@ -99,7 +99,7 @@ class SwearFunctionalityImpl[F[_]: TelegramClient: MonadThrow: Random](service: 
                             )
         yield ()
 
-    def addSwear: Scenario[F, Unit] =
+    def addSwear: Scenario[IO, Unit] =
         for
             chat             <- Scenario.expect(command("add_swear").chat)
             _                <- Scenario.eval(chat.send("Send swear group id"))
@@ -115,14 +115,14 @@ class SwearFunctionalityImpl[F[_]: TelegramClient: MonadThrow: Random](service: 
                                 )
         yield ()
 
-    private def addSwear2(groupId: SwearGroupId, chat: Chat): Scenario[F, Unit] =
+    private def addSwear2(groupId: SwearGroupId, chat: Chat): Scenario[IO, Unit] =
         for
             _                 <- Scenario.eval(chat.send("Send swear"))
             swearString       <- Scenario.expect(text).handleDiscard
             _                 <- Scenario.eval(chat.send("Send swear weight"))
             swearWeightString <- Scenario.expect(text).handleDiscard
             weightMaybe       <-
-                Scenario.eval(MonadThrow[F].fromTry(Try(swearWeightString.toInt))).attempt
+                Scenario.eval(IO.fromTry(Try(swearWeightString.toInt))).attempt
             _                 <- weightMaybe.fold(
                                    _ =>
                                        Scenario.eval(
@@ -134,22 +134,22 @@ class SwearFunctionalityImpl[F[_]: TelegramClient: MonadThrow: Random](service: 
                                  )
         yield ()
 
-    private def parseAndValidateGroupId(swearGroupString: String): F[SwearGroupId] =
+    private def parseAndValidateGroupId(swearGroupString: String): IO[SwearGroupId] =
         for
-            idRaw            <- MonadThrow[F].fromTry(Try(swearGroupString.toInt))
+            idRaw            <- IO.fromTry(Try(swearGroupString.toInt))
             id                = SwearGroupId(idRaw)
             swearGroupExists <- service.swearGroupExists(id)
-            res              <- if swearGroupExists then MonadThrow[F].pure(id)
-                                else MonadThrow[F].raiseError(new Exception("Swear group does not exist"))
+            res              <- if swearGroupExists then IO.pure(id)
+                                else IO.raiseError(new Exception("Swear group does not exist"))
         yield res
 
-    def deleteSwear: Scenario[F, Unit] =
+    def deleteSwear: Scenario[IO, Unit] =
         for
             chat          <- Scenario.expect(command("delete_swear").chat)
             _             <- Scenario.eval(chat.send("Send swear id"))
             swearIdString <- Scenario.expect(text).handleDiscard
             swearIdMaybe  <-
-                Scenario.eval(MonadThrow[F].fromTry(Try(swearIdString.toInt))).attempt
+                Scenario.eval(IO.fromTry(Try(swearIdString.toInt))).attempt
             _             <- swearIdMaybe.fold(
                                _ =>
                                    Scenario.eval(

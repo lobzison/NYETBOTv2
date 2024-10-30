@@ -1,25 +1,25 @@
 package nyetbot.model
 
-import canoe.models.{Sticker, PhotoSize, Animation}
-import io.circe.Json
-import io.circe.syntax.*
-import io.circe.generic.auto.*
-import skunk.codec.all.*
-import skunk.circe.codec.json.json
-import skunk.*
-import cats.Show
-import skunk.Decoder
+import canoe.models.Animation
+import canoe.models.PhotoSize
+import canoe.models.Sticker
+import canoe.models.messages.AnimationMessage
+import canoe.models.messages.PhotoMessage
+import canoe.models.messages.StickerMessage
+import canoe.models.messages.TelegramMessage
+import canoe.models.messages.TextMessage
 import cats.MonadThrow
 import cats.implicits.toFunctorOps
 import cats.implicits.toTraverseOps
-import scala.util.matching.Regex
-import canoe.models.messages.{TelegramMessage, StickerMessage, PhotoMessage, AnimationMessage}
-import canoe.models.outgoing.MessageContent
-import canoe.models.outgoing.StickerContent
-import canoe.models.outgoing.PhotoContent
-import canoe.models.outgoing.AnimationContent
-import canoe.models.messages.TextMessage
+import io.circe.Json
+import io.circe.generic.auto.*
+import io.circe.syntax.*
 import nyetbot.Config.LlmConfig
+import skunk.*
+import skunk.circe.codec.json.json
+import skunk.codec.all.*
+
+import scala.util.matching.Regex
 
 opaque type MemeId = Int
 object MemeId:

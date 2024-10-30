@@ -1,19 +1,19 @@
 package nyetbot.service
 
-import nyetbot.model.*
-import nyetbot.vault.SwearVault
 import cats.Show
-import cats.implicits.*
-import cats.MonadThrow
-import cats.effect.std.Random
+import cats.effect.IO
 import cats.effect.kernel.Ref
-import cats.effect.kernel.Concurrent
+import cats.effect.std.Random
+import cats.implicits.*
+import nyetbot.model.*
+import nyetbot.repo.SwearRepo
 
-class SwearServiceCached[F[_]: MonadThrow: Random](
-    vault: SwearVault[F],
-    inMemory: Ref[F, SwearMemoryStorage]
-) extends SwearService[F]:
-    def showSwearGroups(using Show[Chance]): F[String] =
+class SwearServiceCached(
+    vault: SwearRepo,
+    inMemory: Ref[IO, SwearMemoryStorage]
+)(using Random[IO])
+    extends SwearService:
+    def showSwearGroups(using Show[Chance]): IO[String] =
         val header = List("id", "chance")
         for
             swearStorage <- inMemory.get
@@ -21,19 +21,19 @@ class SwearServiceCached[F[_]: MonadThrow: Random](
                 swearStorage.swearRows
                     .map(s => List(s.groupId.value.toString, s.groupChance.show))
                     .distinct
-            drawer       <- TableDrawer.create[F](header.length, header :: body)
+            drawer       <- TableDrawer.create[IO](header.length, header :: body)
         yield drawer.buildHtmlCodeTable
-    def showSwears(groupId: SwearGroupId): F[String]   =
+    def showSwears(groupId: SwearGroupId): IO[String]   =
         val header = List("id", "swear", "weight")
         for
             swearStorage <- inMemory.get
             body          = swearStorage.swearRows.map(s =>
                                 List(s.id.value.toString, s.swear.value, s.weight.toString)
                             )
-            drawer       <- TableDrawer.create[F](header.length, header :: body)
+            drawer       <- TableDrawer.create[IO](header.length, header :: body)
         yield drawer.buildHtmlCodeTable
 
-    def getSwear: F[Option[Swear]] =
+    def getSwear: IO[Option[Swear]] =
         for
             swearStorage <- inMemory.get
             groupId      <-
@@ -42,14 +42,14 @@ class SwearServiceCached[F[_]: MonadThrow: Random](
             swear        <- swearGroup.traverse(rollSwearInGroup)
         yield swear
 
-    private def rollForOneGroup(id: SwearGroupId, chance: Chance): F[Option[SwearGroupId]] =
-        Random[F].betweenInt(0, chance.value).map(r => Option.when(r == 0)(id))
+    private def rollForOneGroup(id: SwearGroupId, chance: Chance): IO[Option[SwearGroupId]] =
+        Random[IO].betweenInt(0, chance.value).map(r => Option.when(r == 0)(id))
 
-    private def rollSwearInGroup(id: SwearGroupId): F[Swear] =
+    private def rollSwearInGroup(id: SwearGroupId): IO[Swear] =
         for
             swearStorage <- inMemory.get
             group         = swearStorage.groupedSwears(id)
-            r            <- Random[F].betweenInt(0, group.totalWeight)
+            r            <- Random[IO].betweenInt(0, group.totalWeight)
         yield selectSwearWeighted(group.swears, r)
 
     private def selectSwearWeighted(swears: List[SwearRow], roll: Int): Swear =
@@ -59,18 +59,18 @@ class SwearServiceCached[F[_]: MonadThrow: Random](
         val (swear, _) = swears.foldLeft((None: Option[Swear], 0)) {
             case ((maybeSwear, currentWeight), currentSwear) =>
                 val nextWeight = currentWeight + currentSwear.weight
-                if (roll >= currentWeight && roll < nextWeight) then
+                if roll >= currentWeight && roll < nextWeight then
                     (Some(currentSwear.swear), nextWeight)
                 else (maybeSwear, nextWeight)
         }
         swear.getOrElse(swears.head.swear)
 
-    def addSwearGroup(groupChance: Chance): F[Unit] =
+    def addSwearGroup(groupChance: Chance): IO[Unit] =
         vault.addSwearGroup(groupChance) >> updateInMemoryRepresentation
 
-    def addSwear(groupId: SwearGroupId, swear: Swear, weight: Int): F[Unit] =
+    def addSwear(groupId: SwearGroupId, swear: Swear, weight: Int): IO[Unit] =
         val performUpdate = vault.addSwear(groupId, swear, weight) >> updateInMemoryRepresentation
-        val raiseError    = MonadThrow[F].raiseError[Unit](
+        val raiseError    = IO.raiseError[Unit](
           new IllegalArgumentException(s"Swear group with id $groupId does not exist")
         )
         for
@@ -78,17 +78,17 @@ class SwearServiceCached[F[_]: MonadThrow: Random](
             _                <- if swearGroupExists then performUpdate else raiseError
         yield ()
 
-    def swearGroupExists(groupId: SwearGroupId): F[Boolean] =
+    def swearGroupExists(groupId: SwearGroupId): IO[Boolean] =
         for swearStorage <- inMemory.get
         yield swearStorage.groupedSwears.contains(groupId)
 
-    def deleteSwearGroup(id: SwearGroupId): F[Unit] =
+    def deleteSwearGroup(id: SwearGroupId): IO[Unit] =
         vault.deleteSwearGroup(id) >> updateInMemoryRepresentation
 
-    def deleteSwear(id: SwearId): F[Unit] =
+    def deleteSwear(id: SwearId): IO[Unit] =
         vault.deleteSwear(id) >> updateInMemoryRepresentation
 
-    private val updateInMemoryRepresentation: F[Unit] =
+    private val updateInMemoryRepresentation: IO[Unit] =
         for
             swearRows <- vault.getSwears
             _         <- inMemory.set(SwearServiceCached.createInMemoryRepresentation(swearRows))
@@ -96,11 +96,11 @@ class SwearServiceCached[F[_]: MonadThrow: Random](
 
 object SwearServiceCached:
 
-    def apply[F[_]: Concurrent: Random](vault: SwearVault[F]): F[SwearServiceCached[F]] =
+    def apply(vault: SwearRepo)(using Random[IO]): IO[SwearServiceCached] =
         for
             swearRows <- vault.getSwears
             inMemory  <-
-                Ref.of[F, SwearMemoryStorage](
+                Ref.of[IO, SwearMemoryStorage](
                   SwearServiceCached.createInMemoryRepresentation(swearRows)
                 )
         yield new SwearServiceCached(vault, inMemory)
