@@ -2,7 +2,6 @@ package nyetbot.service
 
 import nyetbot.model.{Meme, MemeId, Chance}
 import nyetbot.model.SupportedMemeType
-import cats.effect.kernel.Ref
 import nyetbot.model.MemeCreationRequest
 import cats.Show
 

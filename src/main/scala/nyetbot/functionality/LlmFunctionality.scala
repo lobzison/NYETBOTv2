@@ -1,26 +1,18 @@
 package nyetbot.functionality
 
-import canoe.api.Scenario
-import canoe.api.TelegramClient
-import cats.MonadThrow
 import cats.effect.std.Random
-import cats.implicits.*
 import cats.*
 import cats.effect.*
 import canoe.api.*
 import canoe.models.*
 import canoe.models.messages.*
 import canoe.syntax.*
-import nyetbot.model.{given, *}
-import cats.effect.kernel.syntax.resource
-import scala.util.Try
+import nyetbot.model.*
 import nyetbot.service.LlmService
-import cats.effect.kernel.GenConcurrent
 import cats.effect.std.Queue
 import nyetbot.Config.LlmConfig
 import cats.effect.std.Console
 import nyetbot.service.TranslationService
-import nyetbot.service.TransliterationService
 import cats.effect.std.Mutex
 import concurrent.duration.DurationInt
 import cats.effect.implicits.*

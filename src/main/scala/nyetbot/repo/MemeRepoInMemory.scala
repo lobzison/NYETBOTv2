@@ -1,15 +1,14 @@
-package nyetbot.vault
+package nyetbot.repo
 
 import nyetbot.model.MemeId
 import nyetbot.model.MemeRow
 import nyetbot.model.MemeCreationRequest
 import cats.effect.kernel.Ref
-import cats.Monad
 
 import cats.implicits.*
 import cats.*
 
-class MemeVaultInMemory[F[_]: Monad](ref: Ref[F, List[MemeRow]]) extends MemeVault[F]:
+class MemeRepoInMemory[F[_]: Monad](ref: Ref[F, List[MemeRow]]) extends MemeRepo[F]:
     override def getAllMemes: F[List[MemeRow]]               =
         ref.get
     override def addMeme(meme: MemeCreationRequest): F[Unit] =

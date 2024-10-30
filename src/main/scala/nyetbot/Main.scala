@@ -1,23 +1,18 @@
 package nyetbot
 
 import canoe.api.*
-import canoe.syntax.*
 import cats.effect.{IO, IOApp}
 import cats.effect.kernel.*
 import cats.effect.std.Random
-import fly4s.core.*
-import fs2.Stream
+import fly4s.*
 import nyetbot.functionality.*
-import nyetbot.model.*
 import nyetbot.service.*
-import nyetbot.vault.*
+import nyetbot.repo.*
 import skunk.Session
 import org.typelevel.otel4s.trace.Tracer
 import cats.effect.IO.asyncForIO
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.Client
-import nyetbot.service.TranslationService.Translation.translationDecoder
-import cats.implicits.catsSyntaxApplicativeError
 import scala.util.control.NonFatal
 import concurrent.duration.DurationInt
 
@@ -51,8 +46,8 @@ object Main extends IOApp.Simple:
             _                 <- IO.println("Starting NYETBOTv2")
             given Random[IO]  <- Random.scalaUtilRandom[IO]
             _                 <- fly4s.migrate
-            dbVault            = MemeVaultDB[IO](db)
-            swearVault         = SwearVaultImpl[IO](db)
+            dbVault            = MemeRepoDB[IO](db)
+            swearVault         = SwearRepoImpl[IO](db)
             swearService      <- SwearServiceCached[IO](swearVault)
             swear              = SwearFunctionalityImpl[IO](swearService)
             service           <- MemeServiceCached[IO](dbVault)

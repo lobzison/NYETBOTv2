@@ -1,6 +1,5 @@
-package nyetbot.vault
+package nyetbot.repo
 
-import skunk.Session
 import nyetbot.model.*
 
 import cats.effect.*
@@ -8,11 +7,9 @@ import skunk.*
 import skunk.implicits.*
 import skunk.codec.all.*
 import skunk.circe.codec.json.json
-import cats.Functor
 import cats.implicits.*
-import cats.Monad
 
-class MemeVaultDB[F[_]: Concurrent](s: Session[F]) extends MemeVault[F]:
+class MemeRepoDB[F[_]: Concurrent](s: Session[F]) extends MemeRepo[F]:
     def getAllMemes: F[List[MemeRow]]         =
         val query =
             sql"select id, trigger, body, chance from memes order by id".query(

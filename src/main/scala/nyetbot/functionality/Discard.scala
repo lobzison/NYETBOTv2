@@ -2,7 +2,6 @@ package nyetbot.functionality
 
 import canoe.models.messages.TelegramMessage
 import canoe.models.messages.TextMessage
-import cats.MonadThrow
 import canoe.models.messages.UserMessage
 import canoe.syntax.*
 import canoe.api.*

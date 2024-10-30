@@ -1,7 +1,7 @@
-package nyetbot.vault
+package nyetbot.repo
 
-import fly4s.core.*
-import fly4s.core.data.*
+import fly4s.*
+import fly4s.data.*
 import nyetbot.Config
 import cats.effect.kernel.Resource
 import cats.effect.kernel.Async

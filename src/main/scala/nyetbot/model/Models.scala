@@ -7,17 +7,12 @@ import io.circe.generic.auto.*
 import skunk.codec.all.*
 import skunk.circe.codec.json.json
 import skunk.*
-import cats.Show
 import skunk.Decoder
 import cats.MonadThrow
 import cats.implicits.toFunctorOps
 import cats.implicits.toTraverseOps
 import scala.util.matching.Regex
 import canoe.models.messages.{TelegramMessage, StickerMessage, PhotoMessage, AnimationMessage}
-import canoe.models.outgoing.MessageContent
-import canoe.models.outgoing.StickerContent
-import canoe.models.outgoing.PhotoContent
-import canoe.models.outgoing.AnimationContent
 import canoe.models.messages.TextMessage
 import nyetbot.Config.LlmConfig
 

@@ -1,8 +1,5 @@
 package nyetbot.functionality
 
-import canoe.api.Scenario
-import canoe.api.TelegramClient
-import cats.MonadThrow
 import cats.effect.std.Random
 import cats.implicits.*
 import cats.*
@@ -12,7 +9,6 @@ import canoe.models.messages.*
 import canoe.syntax.*
 import nyetbot.service.SwearService
 import nyetbot.model.{given, *}
-import cats.effect.kernel.syntax.resource
 import scala.util.Try
 
 class SwearFunctionalityImpl[F[_]: TelegramClient: MonadThrow: Random](service: SwearService[F])

@@ -1,10 +1,8 @@
 package nyetbot.service
 
 import nyetbot.model.LlmContextMessage
-import cats.effect.kernel.Sync
 import org.http4s.client.Client
 import org.http4s.Request
-import org.http4s.implicits.*
 import nyetbot.Config
 import org.http4s.Header
 import org.http4s.Headers
@@ -18,7 +16,6 @@ import io.circe.Json
 import cats.effect.kernel.Async
 import cats.implicits.*
 import cats.effect.MonadCancelThrow
-import cats.effect.kernel.syntax.MonadCancelSyntax
 import io.circe.Decoder
 
 trait TranslationService[F[_]]:

@@ -1,10 +1,7 @@
 package nyetbot.service
-import nyetbot.service.MemeService
-import nyetbot.model.SupportedMemeType
 import cats.effect.kernel.Ref
 import nyetbot.model.*
-import nyetbot.vault.MemeVault
-import cats.Monad
+import nyetbot.repo.MemeRepo
 
 import cats.implicits.*
 import cats.*
@@ -12,7 +9,7 @@ import cats.effect.kernel.Concurrent
 import nyetbot.model.MemeCreationRequest
 import cats.effect.std.Random
 
-class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: Ref[F, List[Meme]])
+class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeRepo[F], memesF: Ref[F, List[Meme]])
     extends MemeService[F]:
 
     override def getAllMemes: F[List[Meme]]                                   =
@@ -65,7 +62,7 @@ class MemeServiceCached[F[_]: MonadThrow: Random](vault: MemeVault[F], memesF: R
         yield drawer.buildHtmlCodeTable
 
 object MemeServiceCached:
-    def apply[F[_]: Concurrent: Random](vault: MemeVault[F]): F[MemeService[F]] =
+    def apply[F[_]: Concurrent: Random](vault: MemeRepo[F]): F[MemeService[F]] =
         for
             memesPersisted <- vault.getAllMemes
             memesParsed    <- memesPersisted.toMemes

@@ -1,7 +1,7 @@
 package nyetbot.service
 
 import nyetbot.model.*
-import nyetbot.vault.SwearVault
+import nyetbot.repo.SwearRepo
 import cats.Show
 import cats.implicits.*
 import cats.MonadThrow
@@ -10,8 +10,8 @@ import cats.effect.kernel.Ref
 import cats.effect.kernel.Concurrent
 
 class SwearServiceCached[F[_]: MonadThrow: Random](
-    vault: SwearVault[F],
-    inMemory: Ref[F, SwearMemoryStorage]
+                                                      vault: SwearRepo[F],
+                                                      inMemory: Ref[F, SwearMemoryStorage]
 ) extends SwearService[F]:
     def showSwearGroups(using Show[Chance]): F[String] =
         val header = List("id", "chance")
@@ -96,7 +96,7 @@ class SwearServiceCached[F[_]: MonadThrow: Random](
 
 object SwearServiceCached:
 
-    def apply[F[_]: Concurrent: Random](vault: SwearVault[F]): F[SwearServiceCached[F]] =
+    def apply[F[_]: Concurrent: Random](vault: SwearRepo[F]): F[SwearServiceCached[F]] =
         for
             swearRows <- vault.getSwears
             inMemory  <-

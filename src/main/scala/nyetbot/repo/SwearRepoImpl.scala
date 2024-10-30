@@ -1,4 +1,4 @@
-package nyetbot.vault
+package nyetbot.repo
 
 import nyetbot.model.*
 import skunk.*
@@ -7,7 +7,7 @@ import skunk.codec.all.*
 import cats.effect.*
 import cats.implicits.*
 
-class SwearVaultImpl[F[_]: Concurrent](s: Session[F]) extends SwearVault[F]:
+class SwearRepoImpl[F[_]: Concurrent](s: Session[F]) extends SwearRepo[F]:
     def getSwears: F[List[SwearRow]]                                        =
         val query =
             sql"""select sg.id, sg.chance, s.id, s.swear, s.weight from

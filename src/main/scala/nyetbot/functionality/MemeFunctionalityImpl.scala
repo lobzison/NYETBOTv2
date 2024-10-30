@@ -1,16 +1,12 @@
 package nyetbot.functionality
 
-import canoe.api.Scenario
 import nyetbot.service.MemeService
-import cats.Monad
 import cats.implicits.*
 import cats.*
 import canoe.syntax.*
 import canoe.api.*
 import canoe.models.*
 import canoe.models.messages.*
-import nyetbot.model.{SupportedMemeType, MemeCreationRequest, MemeId}
-import nyetbot.model.Meme
 import scala.util.Try
 import nyetbot.model.{*, given}
 
@@ -31,7 +27,7 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
     ): F[Unit] =
         for
             messages <- messagesF
-            res      <- messages.traverse(message => sendMeme(message, chat, replyTo))
+            _        <- messages.traverse(message => sendMeme(message, chat, replyTo))
         yield ()
 
     private def sendMeme(meme: SupportedMemeType, chat: Chat, replyTo: Int): F[Unit] =
@@ -120,6 +116,6 @@ class MemeFunctionalityImpl[F[_]: MonadThrow: TelegramClient](service: MemeServi
 
     private def deleteMemeAction(idString: String): F[Unit] =
         for
-            id  <- MonadThrow[F].fromTry(Try(idString.toInt))
-            res <- service.deleteMeme(MemeId(id))
+            id <- MonadThrow[F].fromTry(Try(idString.toInt))
+            _  <- service.deleteMeme(MemeId(id))
         yield ()
