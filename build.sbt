@@ -13,7 +13,7 @@ lazy val commonSettings = Seq(
     // this is a fork of the original library with ScalaJs dropped
     // because I'm dubm and dont know how to disable ScalaJs and it messes with sbt-pack/sbt-assembley
     "io.github.lobzison" %% "canoe"                      % "0.1-SNAPSHOT",
-    // "org.augustjune"     %% "canoe"         % "0.6.0",
+//    "org.augustjune"     %% "canoe"                      % "0.6.0",
     "co.fs2"             %% "fs2-core"                   % "3.11.0",
     "org.tpolecat"       %% "skunk-core"                 % "1.1.0-M2",
     "org.tpolecat"       %% "skunk-circe"                % "1.1.0-M2",

@@ -1,25 +1,25 @@
 package nyetbot.service
 
+import cats.effect.IO
 import cats.syntax.all.*
-import nyetbot.Config
-import nyetbot.model.LlmContextMessage
-import cats.effect.std.Console
-import cats.effect.{Async, MonadCancelThrow}
 import io.circe.Json
 import io.circe.literal.json
+import nyetbot.Config
+import nyetbot.model.LlmContextMessage
 import org.http4s.Method.POST
-import org.http4s.{Request, Uri}
-import org.http4s.client.Client
+import org.http4s.Request
+import org.http4s.Uri
 import org.http4s.circe.*
+import org.http4s.client.Client
 
-trait LlmService[F[_]]:
-    def predict(context: List[LlmContextMessage], skipPromptInjection: Boolean): F[String]
+trait LlmService:
+    def predict(context: List[LlmContextMessage], skipPromptInjection: Boolean): IO[String]
 
-class OllamaService[F[_]: Async: Console](
-    client: Client[F],
+class OllamaService(
+    client: Client[IO],
     config: Config.OllamaConfig,
     llmConfig: Config.LlmConfig
-) extends LlmService[F]:
+) extends LlmService:
 
     private def buildPrompt(
         context: List[LlmContextMessage],
@@ -34,20 +34,19 @@ class OllamaService[F[_]: Async: Console](
     override def predict(
         context: List[LlmContextMessage],
         skipPromptInjection: Boolean
-    ): F[String] =
+    ): IO[String] =
         val messages: String = buildPrompt(context, skipPromptInjection)
         val body             =
             json""" { "model": "NYETBOTv1", "prompt": $messages, "stream": false } """
 
         val uri     = Uri.unsafeFromString(s"${config.uri}/api/generate")
-        val request = Request[F](method = POST).withUri(uri).withEntity(body)
+        val request = Request[IO](method = POST).withUri(uri).withEntity(body)
 
-        Console[F].println("Start prediction") *>
+        IO.println("Start prediction") *>
             client.run(request).use { res =>
                 res.decodeJson[Json].flatMap { j =>
-                    MonadCancelThrow[F]
-                        .fromEither(
-                          j.hcursor.downField("response").as[String]
-                        )
+                    IO.fromEither(
+                      j.hcursor.downField("response").as[String]
+                    )
                 }
             }

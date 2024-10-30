@@ -1,15 +1,14 @@
 package nyetbot
 
+import cats.*
+import cats.effect.kernel.Resource
 import cats.effect.kernel.Sync
 import cats.implicits.*
-import cats.*
+import nyetbot.Config.OllamaConfig
+import org.http4s.Uri
+import org.http4s.implicits.*
 
 import java.net.URI
-import cats.effect.kernel.Resource
-import nyetbot.Config.OllamaConfig
-
-import org.http4s.implicits.*
-import org.http4s.Uri
 
 case class Config(
     botToken: String,

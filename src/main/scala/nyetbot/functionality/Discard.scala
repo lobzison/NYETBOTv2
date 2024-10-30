@@ -1,13 +1,13 @@
 package nyetbot.functionality
 
+import canoe.api.*
+import canoe.models.*
 import canoe.models.messages.TelegramMessage
 import canoe.models.messages.TextMessage
 import canoe.models.messages.UserMessage
 import canoe.syntax.*
-import canoe.api.*
-import canoe.models.*
-import cats.implicits.*
 import cats.*
+import cats.implicits.*
 
 trait Discard[F[_]: Applicative: TelegramClient]:
     private def scenarioDiscardTrigger: TelegramMessage => Boolean =

@@ -1,49 +1,48 @@
 package nyetbot.functionality
 
-import cats.effect.std.Random
-import cats.*
-import cats.effect.*
 import canoe.api.*
 import canoe.models.*
 import canoe.models.messages.*
 import canoe.syntax.*
+import cats.*
+import cats.effect.*
+import cats.effect.std.Mutex
+import cats.effect.std.Queue
+import cats.effect.std.Random
+import nyetbot.Config.LlmConfig
 import nyetbot.model.*
 import nyetbot.service.LlmService
-import cats.effect.std.Queue
-import nyetbot.Config.LlmConfig
-import cats.effect.std.Console
 import nyetbot.service.TranslationService
-import cats.effect.std.Mutex
+
 import concurrent.duration.DurationInt
-import cats.effect.implicits.*
-import cats.implicits.*
 
-trait LlmFunctionality[F[_]]:
-    def reply: Scenario[F, Unit]
+trait LlmFunctionality:
+    def reply: Scenario[IO, Unit]
 
-class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Random: Temporal](
-    service: LlmService[F],
-    translationService: TranslationService[F],
-    queue: Queue[F, LlmContextMessage],
-    mutex: Mutex[F],
+class LlmFunctionalityImpl(
+    service: LlmService,
+    translationService: TranslationService,
+    queue: Queue[IO, LlmContextMessage],
+    mutex: Mutex[IO],
     config: LlmConfig
-) extends LlmFunctionality[F]:
+)(using TelegramClient[IO], Random[IO])
+    extends LlmFunctionality:
 
-    def predictReply(msg: TextMessage): F[Unit] =
+    def predictReply(msg: TextMessage): IO[Unit] =
         for
             _ <- queue.offer(LlmContextMessage.fromTextMessage(msg, config))
             _ <- triggerReplyWithChance(msg)
         yield ()
 
-    def triggerReplyWithChance(msg: TextMessage): F[Unit] =
+    def triggerReplyWithChance(msg: TextMessage): IO[Unit] =
         for
-            c     <- Random[F].betweenInt(0, config.llmMessageEvery)
+            c     <- Random[IO].betweenInt(0, config.llmMessageEvery)
             tagged = msg.text.contains(config.botAlias)
             _     <- if c == 0 || tagged then triggerReply(msg, tagged)
-                     else Monad[F].unit
+                     else IO.unit
         yield ()
 
-    def triggerReply(msg: TextMessage, tagged: Boolean): F[Unit] =
+    def triggerReply(msg: TextMessage, tagged: Boolean): IO[Unit] =
         def sendIfNotEmpty(s: String) =
             if s.nonEmpty then
                 msg.chat
@@ -52,10 +51,10 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
                       replyToMessageId = Some(msg.messageId)
                     )
                     .void
-            else Monad[F].unit
+            else IO.unit
 
-        def typing: F[Unit] =
-            msg.chat.setAction[F](ChatAction.Typing).void >> Temporal[F].sleep(4.seconds) >> typing
+        def typing: IO[Unit] =
+            msg.chat.setAction[IO](ChatAction.Typing).void >> IO.sleep(4.seconds) >> typing
 
         val translateAndReply = for
             // Amazing efficiency 🤦‍♂️
@@ -71,19 +70,19 @@ class LlmFunctionalityImpl[F[_]: MonadCancelThrow: TelegramClient: Console: Rand
 
         translateAndReply.race(typing).void
 
-    override def reply: Scenario[F, Unit] =
+    override def reply: Scenario[IO, Unit] =
         for
             msg <- Scenario.expect(textMessage)
             _   <- Scenario.eval(mutex.lock.surround(predictReply(msg)))
         yield ()
 
 object LlmFunctionalityImpl:
-    def mk[F[_]: Concurrent: TelegramClient: Console: Random: Temporal](
-        service: LlmService[F],
-        translationService: TranslationService[F],
+    def mk(
+        service: LlmService,
+        translationService: TranslationService,
         config: LlmConfig
-    ): F[LlmFunctionalityImpl[F]] =
+    )(using TelegramClient[IO], Random[IO]): IO[LlmFunctionalityImpl] =
         for
-            m <- Mutex[F]
-            q <- Queue.circularBuffer[F, LlmContextMessage](20)
-        yield LlmFunctionalityImpl[F](service, translationService, q, m, config)
+            m <- Mutex[IO]
+            q <- Queue.circularBuffer[IO, LlmContextMessage](20)
+        yield LlmFunctionalityImpl(service, translationService, q, m, config)

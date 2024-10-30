@@ -1,19 +1,22 @@
 package nyetbot
 
 import canoe.api.*
-import cats.effect.{IO, IOApp}
+import cats.effect.IO
+import cats.effect.IO.asyncForIO
+import cats.effect.IOApp
 import cats.effect.kernel.*
 import cats.effect.std.Random
 import fly4s.*
 import nyetbot.functionality.*
-import nyetbot.service.*
 import nyetbot.repo.*
-import skunk.Session
-import org.typelevel.otel4s.trace.Tracer
-import cats.effect.IO.asyncForIO
+import nyetbot.service.*
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.Client
+import org.typelevel.otel4s.trace.Tracer
+import skunk.Session
+
 import scala.util.control.NonFatal
+
 import concurrent.duration.DurationInt
 
 object Main extends IOApp.Simple:
@@ -46,17 +49,17 @@ object Main extends IOApp.Simple:
             _                 <- IO.println("Starting NYETBOTv2")
             given Random[IO]  <- Random.scalaUtilRandom[IO]
             _                 <- fly4s.migrate
-            dbVault            = MemeRepoDB[IO](db)
-            swearVault         = SwearRepoImpl[IO](db)
-            swearService      <- SwearServiceCached[IO](swearVault)
-            swear              = SwearFunctionalityImpl[IO](swearService)
-            service           <- MemeServiceCached[IO](dbVault)
-            meme               = MemeFunctionalityImpl[IO](service)
+            memeRepo           = MemeRepoDB(db)
+            swearRepo          = SwearRepoImpl(db)
+            swearService      <- SwearServiceCached(swearRepo)
+            swear              = SwearFunctionalityImpl(swearService)
+            service           <- MemeServiceCached(memeRepo)
+            meme               = MemeFunctionalityImpl(service)
             // translation
-            translationService = DeeplTranslationService[IO](client, config.translateConfig)
+            translationService = DeeplTranslationService(client, config.translateConfig)
             // Ollama
-            ollamaService      = OllamaService[IO](client, config.ollamaConfig, config.llmConfig)
-            llm               <- LlmFunctionalityImpl.mk[IO](ollamaService, translationService, config.llmConfig)
+            ollamaService      = OllamaService(client, config.ollamaConfig, config.llmConfig)
+            llm               <- LlmFunctionalityImpl.mk(ollamaService, translationService, config.llmConfig)
             _                 <- IO.println("Ready")
         yield List(
           meme.triggerMemeScenario

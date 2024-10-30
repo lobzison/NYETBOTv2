@@ -1,7 +1,8 @@
 package nyetbot.functionality
 
 import canoe.api.Scenario
+import cats.effect.IO
 
-trait MemeFunctionality[F[_]]:
-    def triggerMemeScenario: Scenario[F, Unit]
-    def memeManagementScenarios: List[Scenario[F, Unit]]
+trait MemeFunctionality:
+    def triggerMemeScenario: Scenario[IO, Unit]
+    def memeManagementScenarios: List[Scenario[IO, Unit]]
