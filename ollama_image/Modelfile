@@ -1,4 +1,4 @@
-FROM dolphin-llama3:8b
+FROM cipher64/darkseek
 
 TEMPLATE "{{ .System }}
 CHAT_MESSAGES:
