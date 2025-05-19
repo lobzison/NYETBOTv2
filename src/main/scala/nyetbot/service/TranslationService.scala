@@ -11,6 +11,7 @@ import nyetbot.service.TranslationService.TargetLang
 import nyetbot.service.TranslationService.Translation
 import org.http4s.Credentials
 import org.http4s.Header
+import org.http4s.Method
 import org.http4s.Headers
 import org.http4s.Request
 import org.http4s.circe.*
@@ -48,7 +49,7 @@ class DeeplTranslationService(
                 "formality": "prefer_less"
 
             }"""
-        val req  = Request[IO](uri = config.uri, headers = Headers(List(auth))).withEntity(body)
+        val req  = Request[IO](uri = config.uri, headers = Headers(List(auth)), method = Method.POST).withEntity(body)
         if messages.nonEmpty then
             client.run(req).use { r =>
                 r.decodeJson[Json].flatMap { j =>
