@@ -49,13 +49,16 @@ class DeeplTranslationService(
 
             }"""
         val req  = Request[IO](uri = config.uri, headers = Headers(List(auth))).withEntity(body)
-        client.run(req).use { r =>
-            r.decodeJson[Json].flatMap { j =>
-                IO.fromEither(
-                  j.hcursor.downField("translations").as[List[Translation]]
-                ).map(_.map(_.text))
+        if messages.nonEmpty then
+            client.run(req).use { r =>
+                r.decodeJson[Json].flatMap { j =>
+                    IO.fromEither(
+                      j.hcursor.downField("translations").as[List[Translation]]
+                    ).map(_.map(_.text))
+                }
             }
-        }
+        else IO.pure(List.empty)
+
     override def translate(s: String, targetLang: TargetLang): IO[String]                        =
         translateBatch(List(s), targetLang).map(_.head)
 
