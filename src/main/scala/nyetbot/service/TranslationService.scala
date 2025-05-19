@@ -52,14 +52,15 @@ class DeeplTranslationService(
         if messages.nonEmpty then
             client.run(req).use { r =>
                 r.decodeJson[Json].flatMap { j =>
-                    IO.fromEither(
-                      j.hcursor.downField("translations").as[List[Translation]]
-                    ).map(_.map(_.text))
+                    IO.println(s"GOT A THING FROM DEEPL $j") >>
+                        IO.fromEither(
+                          j.hcursor.downField("translations").as[List[Translation]]
+                        ).map(_.map(_.text))
                 }
             }
         else IO.pure(List.empty)
 
-    override def translate(s: String, targetLang: TargetLang): IO[String]                        =
+    override def translate(s: String, targetLang: TargetLang): IO[String] =
         translateBatch(List(s), targetLang).map(_.head)
 
     override def translateMessageBatch(
