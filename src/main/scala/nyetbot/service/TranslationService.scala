@@ -52,7 +52,7 @@ class DeeplTranslationService(
         if messages.nonEmpty then
             client.run(req).use { r =>
                 r.decodeJson[Json].flatMap { j =>
-                    IO.println(s"GOT A THING FROM DEEPL $j") >>
+                    IO.println(s"GOT A THING FROM DEEPL $j, text $messages, body $body") >>
                         IO.fromEither(
                           j.hcursor.downField("translations").as[List[Translation]]
                         ).map(_.map(_.text))
