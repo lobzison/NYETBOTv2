@@ -1,7 +1,16 @@
-FROM ollama/ollama as ollama
+FROM ollama/ollama:latest AS builder
 
-COPY ./Modelfile ./Modelfile
+COPY ./Modelfile /tmp/Modelfile
+
+RUN nohup bash -c "ollama serve &" && \
+    sleep 20 && \
+    ollama create NYETBOTv1 -f /tmp/Modelfile && \
+    pkill ollama
+
+FROM ollama/ollama:latest
+
+COPY --from=builder /root/.ollama /root/.ollama
+
 EXPOSE 11434
 
-# RUN sysctl -w vm.swappiness=1
-RUN ollama serve & sleep 20 && ollama create NYETBOTv1 -f ./Modelfile
+CMD ["ollama", "serve"]
