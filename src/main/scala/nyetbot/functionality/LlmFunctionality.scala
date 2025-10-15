@@ -7,7 +7,7 @@ import canoe.syntax.*
 import cats.*
 import cats.effect.*
 import cats.effect.std.Mutex
-import cats.effect.std.Queue
+import cats.effect.Ref
 import cats.effect.std.Random
 import nyetbot.Config.LlmConfig
 import nyetbot.model.*
@@ -22,7 +22,7 @@ trait LlmFunctionality:
 class LlmFunctionalityImpl(
     service: LlmService,
     translationService: TranslationService,
-    queue: Queue[IO, LlmContextMessage],
+    contextRef: Ref[IO, Vector[LlmContextMessage]],
     mutex: Mutex[IO],
     config: LlmConfig
 )(using TelegramClient[IO], Random[IO])
@@ -30,8 +30,9 @@ class LlmFunctionalityImpl(
 
     def predictReply(msg: TextMessage): IO[Unit] =
         for
-            _ <- queue.offer(LlmContextMessage.fromTextMessage(msg, config))
-            _ <- triggerReplyWithChance(msg)
+            newMsg <- IO.pure(LlmContextMessage.fromTextMessage(msg, config))
+            _      <- contextRef.update(msgs => (msgs :+ newMsg).takeRight(20))
+            _      <- triggerReplyWithChance(msg)
         yield ()
 
     def triggerReplyWithChance(msg: TextMessage): IO[Unit] =
@@ -57,14 +58,17 @@ class LlmFunctionalityImpl(
             msg.chat.setAction[IO](ChatAction.Typing).void >> IO.sleep(4.seconds) >> typing
 
         val translateAndReply = for
-            // Amazing efficiency 🤦‍♂️
-            msgs           <- queue.tryTakeN(None)
+            msgs           <- contextRef.get
             translatedMsgs <-
-                translationService.translateMessageBatch(msgs, TranslationService.TargetLang.EN)
+                translationService.translateMessageBatch(
+                  msgs.toList,
+                  TranslationService.TargetLang.EN
+                )
             replyEng       <- service.predict(translatedMsgs, tagged)
+            _               = println(s"predicted bot message: $replyEng")
             reply          <- translationService.translate(replyEng, TranslationService.TargetLang.RU)
-            _              <- queue.tryOfferN(msgs)
-            _              <- queue.offer(LlmContextMessage(config.userPrefix + config.botName, reply))
+            replyMsg       <- IO.pure(LlmContextMessage(config.userPrefix + config.botName, reply))
+            _              <- contextRef.update(msgs => (msgs :+ replyMsg).takeRight(20))
             _              <- sendIfNotEmpty(reply.trim)
         yield ()
 
@@ -84,5 +88,5 @@ object LlmFunctionalityImpl:
     )(using TelegramClient[IO], Random[IO]): IO[LlmFunctionalityImpl] =
         for
             m <- Mutex[IO]
-            q <- Queue.circularBuffer[IO, LlmContextMessage](20)
-        yield LlmFunctionalityImpl(service, translationService, q, m, config)
+            r <- Ref.of[IO, Vector[LlmContextMessage]](Vector.empty)
+        yield LlmFunctionalityImpl(service, translationService, r, m, config)

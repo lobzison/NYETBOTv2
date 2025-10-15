@@ -37,7 +37,7 @@ class OllamaService(
     ): IO[String] =
         val messages: String = buildPrompt(context, skipPromptInjection)
         val body             =
-            json""" { "model": "NYETBOTv1", "prompt": $messages, "stream": false } """
+            json""" { "model": "NYETBOTv1", "prompt": $messages, "stream": false,  "options": {"num_predict": 500} } """
 
         val uri     = Uri.unsafeFromString(s"${config.uri}/api/generate")
         val request = Request[IO](method = POST).withUri(uri).withEntity(body)
