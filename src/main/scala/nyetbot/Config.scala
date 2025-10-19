@@ -96,9 +96,9 @@ object Config:
         DbConfig(host, port, dbName, username, password, "flyway", List("db"))
 
     def buildLlmConfig(llmMessageEvery: Int): LlmConfig =
-        val botName      = "Nyetbot"
+        val botName      = "NYETBOT"
         val botAlias     = "@nyetterbot"
-        val userPrefix   = "$$$"
+        val userPrefix   = ""
         val inputPrefix  = ": "
         val promptPrefix = s"""
 Below is a transcript of a chat conversation of users and a $botName.
