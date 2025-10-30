@@ -1,4 +1,4 @@
-FROM wizard-vicuna-uncensored:7b
+FROM dolphin-mistral:7b
 
 TEMPLATE """{{ if .System }}{{ .System }}{{ end }}
 {{ if .Prompt }}USER: {{ .Prompt }}
