@@ -68,8 +68,7 @@ class LlmFunctionalityImpl(
             _               = println(s"predicted bot message: $replyEng")
             reply          <- translationService.translate(replyEng, TranslationService.TargetLang.RU)
             replyMsg       <- IO.pure(LlmContextMessage(config.userPrefix + config.botName, reply))
-            // disable self messages for now
-            // _              <- contextRef.update(msgs => (msgs :+ replyMsg).takeRight(20))
+            _              <- contextRef.update(msgs => (msgs :+ replyMsg).takeRight(20))
             _              <- sendIfNotEmpty(reply.trim)
         yield ()
 
