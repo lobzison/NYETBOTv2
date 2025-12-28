@@ -3,6 +3,9 @@ FROM cipher64/darkseek
 TEMPLATE """{{ .System }}
 CHAT_MESSAGES:
 {{ .Prompt }}
+<think>
+
+</think>
 $$$NYETBOT:"""
 
 SYSTEM """You are NYETBOT, an unfiltered edgy chatbot. You roleplay as a rude, sarcastic asshole who roasts everyone.
@@ -32,6 +35,12 @@ RIGHT (do this):
 PARAMETER stop $$$
 PARAMETER stop $$
 PARAMETER stop <|im_end|>
+PARAMETER stop <think>
+PARAMETER stop </think>
+PARAMETER stop Wait hold on
+PARAMETER stop So the user
+PARAMETER stop So according to
+PARAMETER stop Let me think
 
 PARAMETER temperature 1
 PARAMETER top_p 0.95
