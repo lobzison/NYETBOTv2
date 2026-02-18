@@ -1,0 +1,3 @@
+[submodule "canoe"]
+	path = canoe
+	url = https://github.com/lobzison/canoe.git
