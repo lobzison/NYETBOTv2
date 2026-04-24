@@ -5,4 +5,5 @@ COPY . .
 RUN cd canoe && ../sbtx core/publishLocal
 RUN ./sbtx pack
 ENV JAVA_OPTS="--enable-native-access=ALL-UNNAMED"
+EXPOSE 8080
 CMD ["./target/pack/bin/main"]

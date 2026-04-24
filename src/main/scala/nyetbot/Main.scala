@@ -9,14 +9,14 @@ import cats.effect.std.Random
 import fly4s.*
 import nyetbot.functionality.*
 import nyetbot.repo.*
-import nyetbot.service.*
+import nyetbot.service.{HeartbeatService, *}
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.Client
+import org.typelevel.otel4s.metrics.Meter
 import org.typelevel.otel4s.trace.Tracer
 import skunk.Session
 
 import scala.util.control.NonFatal
-
 import concurrent.duration.DurationInt
 
 object Main extends IOApp.Simple:
@@ -24,13 +24,15 @@ object Main extends IOApp.Simple:
         dependencies.use { case (given TelegramClient[IO], config, fly4s, db, client) =>
             for
                 scenarios <- buildScenarios(config, fly4s, db, client)
-                _         <- app(scenarios)
+                heartbeat <- HeartbeatService.apply()
+                _         <- HealthServer.resource(heartbeat).use(_ => app(scenarios, heartbeat))
             yield ()
         }
 
     val dependencies
         : Resource[IO, (TelegramClient[IO], Config, Fly4s[IO], Session[IO], Client[IO])] =
         implicit val noopTracer: Tracer[IO] = Tracer.noop
+        implicit val noopMeter: Meter[IO]   = Meter.noop
         for
             config <- Config.configResource[IO]
             tg     <- TelegramClient.global[IO](config.botToken)
@@ -65,9 +67,11 @@ object Main extends IOApp.Simple:
           meme.triggerMemeScenario
         ) ++ meme.memeManagementScenarios ++ swear.scenarios :+ llm.reply
 
-    def app(scenarios: List[Scenario[IO, Unit]])(using TelegramClient[IO]): IO[Unit] =
-        val prog = Bot.polling[IO].follow(scenarios*).compile.drain
+    def app(scenarios: List[Scenario[IO, Unit]], heartbeatService: HeartbeatService)(using
+        TelegramClient[IO]
+    ): IO[Unit] =
+        val prog = Bot.polling[IO].follow(scenarios*).evalTap(_ => heartbeatService.beat).compile.drain
         prog.recoverWith { case NonFatal(e) =>
             IO.println(s"Died with $e, restarting") >> IO.delay(e.printStackTrace()) >>
-                IO.sleep(1.minute) >> app(scenarios)
+                IO.sleep(1.minute) >> app(scenarios, heartbeatService)
         }
