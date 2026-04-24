@@ -16,8 +16,9 @@ object HealthServer:
 
     def routes(heartbeat: HeartbeatService): HttpRoutes[IO] =
         HttpRoutes.of[IO] { case GET -> Root / "health" =>
-            heartbeat.isAlive.flatMap {
-                case true  => Ok("ok")
-                case false => ServiceUnavailable("stale")
-            }
+            IO.println("health is checked") >>
+                heartbeat.isAlive.flatMap {
+                    case true  => Ok("ok")
+                    case false => ServiceUnavailable("stale")
+                }
         }

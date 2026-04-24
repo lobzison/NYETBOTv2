@@ -16,7 +16,6 @@ object HeartbeatService:
         yield new HeartbeatService:
             def beat: IO[Unit] =
                 for
-                    _ <- IO.println("MA HART IS BEATING")
                     now <- Temporal[IO].monotonic
                     _   <- r.set(now)
                 yield ()
