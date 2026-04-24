@@ -1,6 +1,7 @@
 package nyetbot
 
 import canoe.api.*
+import canoe.api.sources.Polling
 import cats.effect.IO
 import cats.effect.IO.asyncForIO
 import cats.effect.IOApp
@@ -70,7 +71,11 @@ object Main extends IOApp.Simple:
     def app(scenarios: List[Scenario[IO, Unit]], heartbeatService: HeartbeatService)(using
         TelegramClient[IO]
     ): IO[Unit] =
-        val prog = Bot.polling[IO].follow(scenarios*).evalTap(_ => heartbeatService.beat).compile.drain
+        val prog = Bot
+            .fromStream(Polling.continual.evalTap(_ => heartbeatService.beat))
+            .follow(scenarios*)
+            .compile
+            .drain
         prog.recoverWith { case NonFatal(e) =>
             IO.println(s"Died with $e, restarting") >> IO.delay(e.printStackTrace()) >>
                 IO.sleep(1.minute) >> app(scenarios, heartbeatService)

@@ -6,8 +6,6 @@ import canoe.models.messages.*
 import canoe.syntax.*
 import cats.*
 import cats.effect.IO
-import cats.effect.std.Random
-import cats.implicits.*
 import nyetbot.model.{*, given}
 import nyetbot.service.SwearService
 
@@ -15,7 +13,6 @@ import scala.util.Try
 
 class SwearFunctionalityImpl(service: SwearService)(using
     TelegramClient[IO],
-    Random[IO]
 ) extends SwearFunctionality
     with Discard[IO]:
     override def scenario: Scenario[IO, Unit] =
