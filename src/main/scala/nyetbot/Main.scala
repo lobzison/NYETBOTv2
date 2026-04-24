@@ -72,7 +72,7 @@ object Main extends IOApp.Simple:
         TelegramClient[IO]
     ): IO[Unit] =
         val prog = Bot
-            .fromStream(Polling.continual.evalTap(_ => heartbeatService.beat))
+            .fromStream(Polling.continualWithHeartbeat(heartbeatService.beat))
             .follow(scenarios*)
             .compile
             .drain
