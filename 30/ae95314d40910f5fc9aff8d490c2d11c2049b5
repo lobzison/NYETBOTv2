@@ -1,0 +1,37 @@
+src/main/scala/nyetbot/Main.scala
+  668cbdfd3cb9058c 12,15,27-28,35,70-73,76
+build.sbt
+  668cbdfd3cb9058c 2,9-12,14-16,18-39
+src/main/scala/nyetbot/service/HealthServer.scala
+  668cbdfd3cb9058c 1-23
+src/main/scala/nyetbot/service/HeartbeatService.scala
+  668cbdfd3cb9058c 1-28
+Dockerfile
+  668cbdfd3cb9058c 8
+project/plugins.sbt
+  668cbdfd3cb9058c 2-3
+src/main/scala/nyetbot/repo/Database.scala
+  668cbdfd3cb9058c 8,12
+project/build.properties
+  668cbdfd3cb9058c 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "30ae95314d40910f5fc9aff8d490c2d11c2049b5",
+  "prompts": {
+    "668cbdfd3cb9058c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "120d82f5-ad60-416f-b566-eba32299993b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Gleb Lobov",
+      "messages": [],
+      "total_additions": 12087,
+      "total_deletions": 33,
+      "accepted_lines": 12077,
+      "overriden_lines": 0
+    }
+  }
+}
