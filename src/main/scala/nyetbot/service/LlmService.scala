@@ -37,7 +37,7 @@ class OllamaService(
     ): IO[String] =
         val messages: String = buildPrompt(context, skipPromptInjection)
         val body             =
-            json""" { "model": "NYETBOTv1", "prompt": $messages, "stream": false, "think": false, "options": {"num_predict": 100} } """
+            json""" { "model": "NYETBOTv1", "prompt": $messages, "stream": false, "think": false, "options": {"num_predict": 300} } """
 
         println("OLLAMA REQUEST BODY")
         println(body)
