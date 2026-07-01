@@ -1,0 +1,23 @@
+src/test/scala/nyetbot/util/TextSpec.scala
+  s_fdaeb6307c5970::t_127c533abf608e 17
+src/main/scala/nyetbot/service/LlmService.scala
+  s_fdaeb6307c5970::t_5fa2262f44649d 22-23,27
+src/main/scala/nyetbot/functionality/LlmFunctionality.scala
+  s_fdaeb6307c5970::t_dfbf79009a0918 22-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "5a7cf79a709e10077b51049b6efc00eada4eb72c",
+  "prompts": {},
+  "sessions": {
+    "s_fdaeb6307c5970": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5688491-e470-49bb-804d-7863f7b4f33f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Gleb Lobov <lobzison@gmail.com>"
+    }
+  }
+}
