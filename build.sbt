@@ -36,7 +36,15 @@ lazy val commonSettings = Seq(
     "org.http4s"         %% "http4s-blaze-client"        % "0.23.17",
     "org.http4s"         %% "http4s-blaze-server"        % "0.23.17",
     "org.http4s"         %% "http4s-circe"               % "0.23.17",
-    "org.typelevel"      %% "log4cats-slf4j"             % "2.8.0"
+    "org.typelevel"      %% "log4cats-slf4j"             % "2.8.0",
+
+    // Config file (HOCON) for tunable, non-secret parameters. Pure Java, no Scala
+    // binary-version constraints.
+    "com.typesafe"        % "config"                     % "1.4.3",
+
+    // Tests: munit + its cats-effect integration (no live Postgres/Ollama needed).
+    "org.scalameta"      %% "munit"                      % "1.1.0" % Test,
+    "org.typelevel"      %% "munit-cats-effect"          % "2.1.0" % Test
   )
 )
 

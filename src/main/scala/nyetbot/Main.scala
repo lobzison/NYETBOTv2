@@ -40,8 +40,8 @@ object Main extends IOApp.Simple:
             fly4s  <- fly4sRes[IO](config.dbConfig)
             db     <- buildSessionResource[IO](config.dbConfig)
             client <- BlazeClientBuilder[IO]
-                          .withRequestTimeout(25.minute)
-                          .withIdleTimeout(25.minute)
+                          .withRequestTimeout(config.ollamaConfig.requestTimeoutMinutes.minutes)
+                          .withIdleTimeout(config.ollamaConfig.idleTimeoutMinutes.minutes)
                           .resource
         yield (tg, config, fly4s, db, client)
 
@@ -58,11 +58,13 @@ object Main extends IOApp.Simple:
             swear              = SwearFunctionalityImpl(swearService)
             service           <- MemeServiceCached(memeRepo)
             meme               = MemeFunctionalityImpl(service)
-            // translation
-            translationService = DeeplTranslationService(client, config.translateConfig)
-            // Ollama
+            // Per-user behavioural profiles (shares the single skunk Session; see concurrency note
+            // in LlmFunctionalityImpl).
+            profileRepo        = ProfileRepoDB(db)
+            // Ollama + native-Russian LLM reply pipeline (no translation).
             ollamaService      = OllamaService(client, config.ollamaConfig, config.llmConfig)
-            llm               <- LlmFunctionalityImpl.mk(ollamaService, translationService, config.llmConfig)
+            profileService     = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
+            llm               <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
             _                 <- IO.println("Ready")
         yield List(
           meme.triggerMemeScenario
