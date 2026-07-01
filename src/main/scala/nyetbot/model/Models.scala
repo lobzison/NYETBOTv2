@@ -144,8 +144,6 @@ case class SwearMemoryStorage(
 
 case class SwearGroup(totalWeight: Int, swears: List[SwearRow])
 
-// One line of chat context. `userId` is the stable Telegram id (None for messages with no
-// sender, e.g. channel posts); `userName` is the display string used when rendering prompts.
 final case class LlmContextMessage(userId: Option[Long], userName: String, text: String)
 
 object LlmContextMessage:
@@ -155,8 +153,6 @@ object LlmContextMessage:
             .getOrElse("user")
         LlmContextMessage(t.from.map(_.id), user, t.text)
 
-// A stable reference to the user the bot is replying to. Keyed on the Telegram user id,
-// which (unlike the display name) is unique and stable across renames.
 final case class UserRef(id: Long, displayName: String)
 object UserRef:
     def fromUser(u: canoe.models.User): UserRef =
@@ -164,7 +160,6 @@ object UserRef:
         val handle = u.username.map(n => s" (@$n)").getOrElse("")
         UserRef(u.id, s"${u.firstName}$last$handle")
 
-// Persisted behavioural dossier, one row per user (see V1_5 migration).
 final case class Profile(
     userId: Long,
     displayName: String,
@@ -172,7 +167,6 @@ final case class Profile(
     updatedAt: OffsetDateTime
 )
 object Profile:
-    // Decoder for `select user_id, display_name, description, updated_at ...`.
     val codec: Decoder[Profile] =
         (int8 ~ text ~ text ~ timestamptz).map { case id ~ dn ~ desc ~ ts =>
             Profile(id, dn, desc, ts)

@@ -6,8 +6,6 @@ import nyetbot.model.Profile
 
 import java.time.OffsetDateTime
 
-// Ref-backed ProfileRepo fake for orchestration tests (no Postgres). updated_at is fixed
-// so tests stay deterministic.
 class ProfileRepoInMemory(state: Ref[IO, Map[Long, Profile]]) extends ProfileRepo:
     def getProfile(userId: Long): IO[Option[Profile]] =
         state.get.map(_.get(userId))

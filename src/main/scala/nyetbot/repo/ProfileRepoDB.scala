@@ -7,9 +7,6 @@ import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
 
-// skunk-backed ProfileRepo, mirroring MemeRepoDB / SwearRepoImpl. All calls run inside
-// the LLM Mutex in LlmFunctionalityImpl, so the shared Session.single is never used
-// concurrently (see the concurrency note in that file).
 class ProfileRepoDB(s: Session[IO]) extends ProfileRepo:
 
     def getProfile(userId: Long): IO[Option[Profile]] =

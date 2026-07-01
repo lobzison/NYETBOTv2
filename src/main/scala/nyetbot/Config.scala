@@ -6,9 +6,6 @@ import com.typesafe.config.ConfigFactory
 
 import java.net.URI
 
-// Secrets come from the environment (NYETBOT_KEY, DATABASE_URL, OLLAMA_DOMAIN); every
-// non-secret tunable comes from src/main/resources/application.conf (overridable via
-// -Dconfig.file=...). LLM_MESSAGE_EVERY is still honoured as an env override.
 case class Config(
     botToken: String,
     dbConfig: Config.DbConfig,
@@ -71,7 +68,6 @@ object Config:
         val databaseUrl  = sys.env("DATABASE_URL")
         val ollamaDomain = sys.env("OLLAMA_DOMAIN")
 
-        // Env override kept for compatibility with the previous deployment.
         val messageEvery =
             sys.env.get("LLM_MESSAGE_EVERY").map(_.toInt).getOrElse(llm.getInt("message-every"))
 

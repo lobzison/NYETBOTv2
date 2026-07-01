@@ -13,20 +13,18 @@ import org.http4s.Uri
 import org.http4s.circe.*
 import org.http4s.client.Client
 
-// Why the mention was aimed at the bot: continue the current thread, or answer a fresh question.
 enum TagIntent:
     case Contextual
     case NewQuestion
 
-// Everything the schizo reply prompt needs. Assembled by ProfileService, rendered by OllamaPrompts.
 final case class ReplyContext(
     target: UserRef,
-    profile: String,               // stored dossier, may be empty for a new user
-    recentSummary: String,         // fresh summary of the target's recent messages
+    profile: String,
+    recentSummary: String,
     recentChat: List[LlmContextMessage],
     intent: TagIntent,
     minChars: Int,
-    triggerText: String            // the exact message being answered (pinned, not "last line of buffer")
+    triggerText: String
 )
 
 trait LlmService:
@@ -39,9 +37,6 @@ trait LlmService:
         recentChat: List[LlmContextMessage]
     ): IO[TagIntent]
 
-// Pure prompt builders. No HTTP, no effects — unit-tested directly. The reply prompt only
-// supplies dynamic context; the persona itself lives in the Modelfile SYSTEM block. Utility
-// prompts are self-contained (they hit the neutral base model, which has no custom template).
 object OllamaPrompts:
 
     private def renderChat(chat: List[LlmContextMessage], cfg: Config.LlmConfig): String =
@@ -113,8 +108,6 @@ ${renderChat(recentChat, cfg)}
 Если это новый отдельный вопрос — ответь одним словом: NEW.
 Ответ:"""
 
-// Talks to Ollama's /api/generate. The single `complete` helper is the only place model,
-// num_predict, temperature, num_ctx and think are injected.
 class OllamaService(
     client: Client[IO],
     config: Config.OllamaConfig,

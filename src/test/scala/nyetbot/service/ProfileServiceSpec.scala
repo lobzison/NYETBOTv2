@@ -11,7 +11,6 @@ import nyetbot.repo.ProfileRepoInMemory
 
 class ProfileServiceSpec extends CatsEffectSuite:
 
-    // Stub that records the order of LLM calls and returns canned values.
     private class RecordingLlm(calls: Ref[IO, List[String]], rewriteOut: String = "обновлённое досье")
         extends LlmService:
         def generateReply(ctx: ReplyContext): IO[String] =

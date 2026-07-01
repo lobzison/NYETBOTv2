@@ -2,7 +2,6 @@ package nyetbot
 
 import nyetbot.Config.LlmConfig
 
-// Shared test config so specs don't repeat the full LlmConfig.
 object Fixtures:
     val llmConfig: LlmConfig = LlmConfig(
       botName = "NYETBOT",

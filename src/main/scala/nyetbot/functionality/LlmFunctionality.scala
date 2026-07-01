@@ -19,15 +19,13 @@ trait LlmFunctionality:
 
 class LlmFunctionalityImpl(
     profileService: ProfileService,
-    contextRef: Ref[IO, Vector[LlmContextMessage]],                 // rolling chat, cap = chatBufferSize
-    userHistoryRef: Ref[IO, Map[Long, Vector[LlmContextMessage]]],  // per user, cap = recentUserMessages
+    contextRef: Ref[IO, Vector[LlmContextMessage]],
+    userHistoryRef: Ref[IO, Map[Long, Vector[LlmContextMessage]]],
     mutex: Mutex[IO],
     config: LlmConfig
 )(using TelegramClient[IO], Random[IO])
     extends LlmFunctionality:
 
-    // Ingest runs OUTSIDE the mutex: Refs are atomic, so the chat buffer keeps filling even while a
-    // slow reply is being generated. Only the model+DB work in triggerReply is serialized.
     def ingest(msg: TextMessage): IO[Unit] =
         val newMsg = LlmContextMessage.fromTextMessage(msg, config)
         for
@@ -42,8 +40,6 @@ class LlmFunctionalityImpl(
         yield ()
 
     def maybeReply(msg: TextMessage): IO[Unit] =
-        // Isolate the reply: a transient Ollama/DB failure must drop this one reply, not crash the
-        // whole bot (memes/swears included) via the app-level restart.
         val fire =
             mutex
                 .lock
@@ -63,8 +59,6 @@ class LlmFunctionalityImpl(
         def typing: IO[Unit] =
             msg.chat.setAction[IO](ChatAction.Typing).void >> IO.sleep(4.seconds) >> typing
 
-        // Reply-to text exists only when the replied-to message was itself text (the base
-        // TelegramMessage trait exposes no text field).
         def replyToText: String =
             msg.replyToMessage match
                 case Some(t: TextMessage) => t.text
@@ -72,12 +66,9 @@ class LlmFunctionalityImpl(
 
         msg.from match
             case None       =>
-                // No stable user id (channel/system post): nothing to profile, skip.
                 IO.unit
             case Some(user) =>
                 val target = UserRef.fromUser(user)
-                // Pin the exact message being answered (alias normalised) so the reply always targets
-                // THIS message, regardless of what else landed in the shared buffer while queued.
                 val triggerText = msg.text.replace(config.botAlias, config.botName)
                 val trigger     = if tagged then Trigger.Tagged(msg.text, replyToText) else Trigger.Random
 
@@ -99,8 +90,6 @@ class LlmFunctionalityImpl(
                         _          <- sendIfNotEmpty(gen.text.trim)
                     yield gen
 
-                // typing loops forever; produce always wins the race (Left) and cancels typing.
-                // The profile rewrite runs AFTER the reply is sent, off the visible-latency path.
                 produce.race(typing).flatMap {
                     case Left(gen) => profileService.rewriteProfile(target, gen)
                     case Right(_)  => IO.unit

@@ -8,14 +8,10 @@ import nyetbot.model.UserRef
 import nyetbot.repo.ProfileRepo
 import nyetbot.util.Text
 
-// What made the bot reply. Tagged carries the mention text and the reply-to text so the
-// intent classifier can tell a follow-up apart from a fresh question.
 enum Trigger:
     case Random
     case Tagged(question: String, replyToText: String)
 
-// Reply text plus the two inputs needed to rewrite the profile afterwards. Splitting reply
-// generation from the profile rewrite lets the caller send the reply before doing the slow rewrite.
 final case class GeneratedReply(text: String, recentSummary: String, oldProfile: String)
 
 trait ProfileService:
@@ -57,7 +53,6 @@ class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: Config.LlmC
             _      <- repo.upsertProfile(target.id, target.displayName, Text.truncate(merged, config.profileMaxChars))
         yield ()
 
-    // Soft length target: mean-factor * the answered message's length, jittered by +/- spread, clamped.
     private def targetMinChars(triggerText: String): IO[Int] =
         val base = if triggerText.nonEmpty then triggerText.length else config.replyMinChars
         Random[IO].betweenDouble(-config.replySpread, config.replySpread).map { jitter =>

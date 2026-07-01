@@ -58,10 +58,7 @@ object Main extends IOApp.Simple:
             swear              = SwearFunctionalityImpl(swearService)
             service           <- MemeServiceCached(memeRepo)
             meme               = MemeFunctionalityImpl(service)
-            // Per-user behavioural profiles (shares the single skunk Session; see concurrency note
-            // in LlmFunctionalityImpl).
             profileRepo        = ProfileRepoDB(db)
-            // Ollama + native-Russian LLM reply pipeline (no translation).
             ollamaService      = OllamaService(client, config.ollamaConfig, config.llmConfig)
             profileService     = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
             llm               <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
