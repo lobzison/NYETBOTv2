@@ -4,15 +4,13 @@ import canoe.api.*
 import canoe.models.*
 import canoe.models.messages.*
 import canoe.syntax.*
-import cats.*
 import cats.effect.*
 import cats.effect.std.Mutex
-import cats.effect.Ref
 import cats.effect.std.Random
+import cats.syntax.all.*
 import nyetbot.Config.LlmConfig
 import nyetbot.model.*
-import nyetbot.service.LlmService
-import nyetbot.service.TranslationService
+import nyetbot.service.*
 
 import concurrent.duration.DurationInt
 
@@ -20,73 +18,107 @@ trait LlmFunctionality:
     def reply: Scenario[IO, Unit]
 
 class LlmFunctionalityImpl(
-    service: LlmService,
-    translationService: TranslationService,
-    contextRef: Ref[IO, Vector[LlmContextMessage]],
+    profileService: ProfileService,
+    contextRef: Ref[IO, Vector[LlmContextMessage]],                 // rolling chat, cap = chatBufferSize
+    userHistoryRef: Ref[IO, Map[Long, Vector[LlmContextMessage]]],  // per user, cap = recentUserMessages
     mutex: Mutex[IO],
     config: LlmConfig
 )(using TelegramClient[IO], Random[IO])
     extends LlmFunctionality:
 
-    def predictReply(msg: TextMessage): IO[Unit] =
+    // Ingest runs OUTSIDE the mutex: Refs are atomic, so the chat buffer keeps filling even while a
+    // slow reply is being generated. Only the model+DB work in triggerReply is serialized.
+    def ingest(msg: TextMessage): IO[Unit] =
+        val newMsg = LlmContextMessage.fromTextMessage(msg, config)
         for
-            newMsg <- IO.pure(LlmContextMessage.fromTextMessage(msg, config))
-            _      <- contextRef.update(msgs => (msgs :+ newMsg).takeRight(20))
-            _      <- triggerReplyWithChance(msg)
+            _ <- contextRef.update(m => (m :+ newMsg).takeRight(config.chatBufferSize))
+            _ <- msg.from.traverse_ { u =>
+                     userHistoryRef.update { map =>
+                         val buf =
+                             (map.getOrElse(u.id, Vector.empty) :+ newMsg).takeRight(config.recentUserMessages)
+                         map.updated(u.id, buf)
+                     }
+                 }
         yield ()
 
-    def triggerReplyWithChance(msg: TextMessage): IO[Unit] =
+    def maybeReply(msg: TextMessage): IO[Unit] =
+        // Isolate the reply: a transient Ollama/DB failure must drop this one reply, not crash the
+        // whole bot (memes/swears included) via the app-level restart.
+        val fire =
+            mutex
+                .lock
+                .surround(triggerReply(msg, msg.text.contains(config.botAlias)))
+                .handleErrorWith(e => IO.println(s"LLM reply failed: ${e.getMessage}"))
         for
-            c     <- Random[IO].betweenInt(0, config.llmMessageEvery)
+            roll  <- Random[IO].betweenInt(0, config.llmMessageEvery)
             tagged = msg.text.contains(config.botAlias)
-            _     <- if c == 0 || tagged then triggerReply(msg, tagged)
-                     else IO.unit
+            _     <- if roll == 0 || tagged then fire else IO.unit
         yield ()
 
     def triggerReply(msg: TextMessage, tagged: Boolean): IO[Unit] =
         def sendIfNotEmpty(s: String) =
-            if s.nonEmpty then
-                msg.chat
-                    .send(
-                      s,
-                      replyToMessageId = Some(msg.messageId)
-                    )
-                    .void
+            if s.nonEmpty then msg.chat.send(s, replyToMessageId = Some(msg.messageId)).void
             else IO.unit
 
         def typing: IO[Unit] =
             msg.chat.setAction[IO](ChatAction.Typing).void >> IO.sleep(4.seconds) >> typing
 
-        val translateAndReply = for
-            msgs           <- contextRef.get
-            translatedMsgs <-
-                translationService.translateMessageBatch(
-                  msgs.toList,
-                  TranslationService.TargetLang.EN
-                )
-            replyEng       <- service.predict(translatedMsgs, tagged)
-            _               = println(s"predicted bot message: $replyEng")
-            reply          <- translationService.translate(replyEng, TranslationService.TargetLang.RU)
-            replyMsg       <- IO.pure(LlmContextMessage(config.userPrefix + config.botName, reply))
-            _              <- contextRef.update(msgs => (msgs :+ replyMsg).takeRight(200))
-            _              <- sendIfNotEmpty(reply.trim)
-        yield ()
+        // Reply-to text exists only when the replied-to message was itself text (the base
+        // TelegramMessage trait exposes no text field).
+        def replyToText: String =
+            msg.replyToMessage match
+                case Some(t: TextMessage) => t.text
+                case _                    => ""
 
-        translateAndReply.race(typing).void
+        msg.from match
+            case None       =>
+                // No stable user id (channel/system post): nothing to profile, skip.
+                IO.unit
+            case Some(user) =>
+                val target = UserRef.fromUser(user)
+                // Pin the exact message being answered (alias normalised) so the reply always targets
+                // THIS message, regardless of what else landed in the shared buffer while queued.
+                val triggerText = msg.text.replace(config.botAlias, config.botName)
+                val trigger     = if tagged then Trigger.Tagged(msg.text, replyToText) else Trigger.Random
+
+                val produce =
+                    for
+                        recentChat <- contextRef.get.map(_.takeRight(config.replyContextWindow).toList)
+                        recentUser <- userHistoryRef.get.map(_.getOrElse(user.id, Vector.empty).toList)
+                        gen        <- profileService.generateReply(
+                                        target,
+                                        triggerText,
+                                        recentUser,
+                                        recentChat,
+                                        trigger
+                                      )
+                        _          <- contextRef.update(m =>
+                                        (m :+ LlmContextMessage(None, config.botName, gen.text))
+                                            .takeRight(config.chatBufferSize)
+                                      )
+                        _          <- sendIfNotEmpty(gen.text.trim)
+                    yield gen
+
+                // typing loops forever; produce always wins the race (Left) and cancels typing.
+                // The profile rewrite runs AFTER the reply is sent, off the visible-latency path.
+                produce.race(typing).flatMap {
+                    case Left(gen) => profileService.rewriteProfile(target, gen)
+                    case Right(_)  => IO.unit
+                }
 
     override def reply: Scenario[IO, Unit] =
         for
             msg <- Scenario.expect(textMessage)
-            _   <- Scenario.eval(mutex.lock.surround(predictReply(msg)))
+            _   <- Scenario.eval(ingest(msg) *> maybeReply(msg))
         yield ()
 
 object LlmFunctionalityImpl:
-    def mk(
-        service: LlmService,
-        translationService: TranslationService,
-        config: LlmConfig
-    )(using TelegramClient[IO], Random[IO]): IO[LlmFunctionalityImpl] =
+    def mk(profileService: ProfileService, config: LlmConfig)(using
+        TelegramClient[IO],
+        Random[IO]
+    ): IO[LlmFunctionalityImpl] =
         for
-            m <- Mutex[IO]
-            r <- Ref.of[IO, Vector[LlmContextMessage]](Vector.empty)
-        yield LlmFunctionalityImpl(service, translationService, r, m, config)
+            m       <- Mutex[IO]
+            r       <- Ref.of[IO, Vector[LlmContextMessage]](Vector.empty)
+            perUser <- Ref.of[IO, Map[Long, Vector[LlmContextMessage]]](Map.empty)
+        yield LlmFunctionalityImpl(profileService, r, perUser, m, config)

@@ -1,36 +1,53 @@
 package nyetbot
 
-import cats.*
 import cats.effect.kernel.Resource
 import cats.effect.kernel.Sync
-import cats.implicits.*
-import nyetbot.Config.OllamaConfig
-import org.http4s.Uri
-import org.http4s.implicits.*
+import com.typesafe.config.ConfigFactory
 
 import java.net.URI
 
+// Secrets come from the environment (NYETBOT_KEY, DATABASE_URL, OLLAMA_DOMAIN); every
+// non-secret tunable comes from src/main/resources/application.conf (overridable via
+// -Dconfig.file=...). LLM_MESSAGE_EVERY is still honoured as an env override.
 case class Config(
     botToken: String,
     dbConfig: Config.DbConfig,
     llmConfig: Config.LlmConfig,
-    translateConfig: Config.TranslateConfig,
-    ollamaConfig: OllamaConfig
+    ollamaConfig: Config.OllamaConfig
 )
 
 object Config:
-    case class LlmConfig(
+    final case class LlmConfig(
         botName: String,
+        botAlias: String,
         userPrefix: String,
         inputPrefix: String,
-        promptPrefix: String,
-        promptSuffix: String,
         llmMessageEvery: Int,
-        botAlias: String
+        chatBufferSize: Int,
+        replyContextWindow: Int,
+        recentUserMessages: Int,
+        profileMaxChars: Int,
+        summaryMaxChars: Int,
+        replyMinChars: Int,
+        replyMeanFactor: Double,
+        replySpread: Double,
+        replyMaxChars: Int
     )
 
-    case class OllamaConfig(
-        uri: String
+    final case class OllamaConfig(
+        uri: String,
+        replyModel: String,
+        utilityModel: String,
+        replyTemperature: Double,
+        utilityTemperature: Double,
+        replyNumPredict: Int,
+        summaryNumPredict: Int,
+        rewriteNumPredict: Int,
+        intentNumPredict: Int,
+        numCtx: Int,
+        think: Boolean,
+        requestTimeoutMinutes: Int,
+        idleTimeoutMinutes: Int
     )
 
     case class DbConfig(
@@ -45,45 +62,54 @@ object Config:
         val jdbcUrl =
             "jdbc:postgresql://" + dbHost + ':' + dbPort + '/' + dbName + "?sslmode=require"
 
-    case class TranslateConfig(
-        uri: Uri,
-        token: String
-    )
+    def build[F[_]: Sync]: F[Config] = Sync[F].delay {
+        val root = ConfigFactory.load().getConfig("nyetbot")
+        val llm  = root.getConfig("llm")
+        val oll  = root.getConfig("ollama")
 
-    def build[F[_]: Sync]: F[Config] =
-        for
-            botToken        <- Sync[F].delay(sys.env("NYETBOT_KEY"))
-            fullUrl         <- Sync[F].delay(sys.env("DATABASE_URL"))
-            translateKey    <- Sync[F].delay(sys.env("TRANSLATE_KEY"))
-            llmMessageEvery <- Sync[F].delay(sys.env("LLM_MESSAGE_EVERY").toInt)
-            ollamaDomain    <- Sync[F].delay(sys.env("OLLAMA_DOMAIN"))
-        yield buildConfig(
-          botToken,
-          fullUrl,
-          translateKey,
-          llmMessageEvery,
-          ollamaDomain
+        val botToken     = sys.env("NYETBOT_KEY")
+        val databaseUrl  = sys.env("DATABASE_URL")
+        val ollamaDomain = sys.env("OLLAMA_DOMAIN")
+
+        // Env override kept for compatibility with the previous deployment.
+        val messageEvery =
+            sys.env.get("LLM_MESSAGE_EVERY").map(_.toInt).getOrElse(llm.getInt("message-every"))
+
+        val llmConfig = LlmConfig(
+          botName = llm.getString("bot-name"),
+          botAlias = llm.getString("bot-alias"),
+          userPrefix = llm.getString("user-prefix"),
+          inputPrefix = llm.getString("input-prefix"),
+          llmMessageEvery = messageEvery,
+          chatBufferSize = llm.getInt("chat-buffer-size"),
+          replyContextWindow = llm.getInt("reply-context-window"),
+          recentUserMessages = llm.getInt("recent-user-messages"),
+          profileMaxChars = llm.getInt("profile-max-chars"),
+          summaryMaxChars = llm.getInt("summary-max-chars"),
+          replyMinChars = llm.getInt("reply.min-chars"),
+          replyMeanFactor = llm.getDouble("reply.mean-factor"),
+          replySpread = llm.getDouble("reply.spread"),
+          replyMaxChars = llm.getInt("reply.max-chars")
         )
 
-    def buildConfig(
-        botToken: String,
-        fullDbUrl: String,
-        translateKey: String,
-        llmMessageEvery: Int,
-        ollamaDomain: String
-    ) =
-        val dbConfig        = buildDbConfig(fullDbUrl)
-        val llmConfig       = buildLlmConfig(llmMessageEvery)
-        val translateConfig =
-            TranslateConfig(uri"https://api-free.deepl.com/v2/translate", translateKey)
-        val ollama          = OllamaConfig(s"http://$ollamaDomain:11434")
-        Config(
-          botToken,
-          dbConfig,
-          llmConfig,
-          translateConfig,
-          ollama
+        val ollamaConfig = OllamaConfig(
+          uri = s"http://$ollamaDomain:${oll.getInt("port")}",
+          replyModel = oll.getString("reply-model"),
+          utilityModel = oll.getString("utility-model"),
+          replyTemperature = oll.getDouble("reply-temperature"),
+          utilityTemperature = oll.getDouble("utility-temperature"),
+          replyNumPredict = oll.getInt("reply-num-predict"),
+          summaryNumPredict = oll.getInt("summary-num-predict"),
+          rewriteNumPredict = oll.getInt("rewrite-num-predict"),
+          intentNumPredict = oll.getInt("intent-num-predict"),
+          numCtx = oll.getInt("num-ctx"),
+          think = oll.getBoolean("think"),
+          requestTimeoutMinutes = oll.getInt("request-timeout-minutes"),
+          idleTimeoutMinutes = oll.getInt("idle-timeout-minutes")
         )
+
+        Config(botToken, buildDbConfig(databaseUrl), llmConfig, ollamaConfig)
+    }
 
     def buildDbConfig(fullDbUrl: String): DbConfig =
         val dbUri = new URI(fullDbUrl)
@@ -95,27 +121,5 @@ object Config:
         val dbName   = dbUri.getPath.stripPrefix("/")
         DbConfig(host, port, dbName, username, password, "flyway", List("db"))
 
-    def buildLlmConfig(llmMessageEvery: Int): LlmConfig =
-        val botName      = "NYETBOT"
-        val botAlias     = "@nyetterbot"
-        val userPrefix   = ""
-        val inputPrefix  = ": "
-        val promptPrefix = s"""
-Below is a transcript of a chat conversation of users and a $botName.
-$botName is extremley rude, like a teenager that discovered 4chan. $botName constantly swears, uses slang, and bullies other users. $botName will rarely agree, and never compliment anyone.
-$botName replies in a short few sentence messages. $botName does not use emojies.
-If $botName can make a joke out of the last user message while keeping the context - he will. 
-If $botName can't, he will try to bully the last user, and use swear words, while keeping the conversation context in mind."""
-        val promptSuffix = "${inputPrefix}${botName}:"
-        LlmConfig(
-          botName,
-          userPrefix,
-          inputPrefix,
-          promptPrefix,
-          promptSuffix,
-          llmMessageEvery,
-          botAlias
-        )
-
     def configResource[F[_]: Sync]: Resource[F, Config] =
-        Resource.make(build[F])(_ => Sync[F].unit)
+        Resource.eval(build[F])
