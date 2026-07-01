@@ -1,0 +1,33 @@
+project/plugins.sbt
+  s_fdaeb6307c5970::t_3b13399459b80e 4
+AGENTS.md
+  s_fdaeb6307c5970::t_a6e9762006c108 1-65
+CLAUDE.md
+  s_fdaeb6307c5970::t_ce8fbbf60fe3b7 1
+build.sbt
+  s_bea67789ee4f1d::t_ec1025dca84fe7 17,29-39,43,46-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "8825aed5f205c9c1c2491815d894fd8024d540bb",
+  "prompts": {},
+  "sessions": {
+    "s_bea67789ee4f1d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "62e78645-e8b8-433b-850d-49d63d3d67c7",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Gleb Lobov <lobzison@gmail.com>"
+    },
+    "s_fdaeb6307c5970": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5688491-e470-49bb-804d-7863f7b4f33f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Gleb Lobov <lobzison@gmail.com>"
+    }
+  }
+}
