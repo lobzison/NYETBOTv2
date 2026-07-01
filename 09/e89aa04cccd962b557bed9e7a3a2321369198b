@@ -1,0 +1,44 @@
+src/main/scala/nyetbot/repo/Database.scala
+  s_fdaeb6307c5970::t_c334f818b17949 14-21
+src/main/scala/nyetbot/functionality/MemeFunctionalityImpl.scala
+  s_fdaeb6307c5970::t_a1ef633c140395 70-72
+src/test/scala/nyetbot/repo/FlywayDbIntegrationSpec.scala
+  s_fdaeb6307c5970::t_39e2c707c1183b 1-47,49-70,75-82
+  s_fdaeb6307c5970::t_95adb062a7db56 48,71-74
+project/build.properties
+  s_fdaeb6307c5970::t_1a89a6eac2948d 1
+project/plugins.sbt
+  s_fdaeb6307c5970::t_a64a7c62644e06 2
+  s_fdaeb6307c5970::t_227f2e25b6da3b 4
+  s_fdaeb6307c5970::t_6af50a6526b718 1
+  s_fdaeb6307c5970::t_d20ee4aba7f858 3
+build.sbt
+  s_fdaeb6307c5970::t_ac84da1c7fb8ee 45-51
+  s_fdaeb6307c5970::t_25ea0015c596ee 21-22
+  s_fdaeb6307c5970::t_2e26a56494ec68 44
+  s_fdaeb6307c5970::t_824549a4fa727b 2
+  s_fdaeb6307c5970::t_1a323d6e5c4b73 9-10
+  s_fdaeb6307c5970::t_1e6b7c344852f0 23
+  s_fdaeb6307c5970::t_30e96e8a95e9da 29-33,36
+  s_fdaeb6307c5970::t_082ff7eb3639f0 41
+AGENTS.md
+  s_fdaeb6307c5970::t_b2d4db03445457 21-23
+  s_fdaeb6307c5970::t_b5613aee928d08 15
+  s_fdaeb6307c5970::t_69251274ea1c01 54-62,65-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "09e89aa04cccd962b557bed9e7a3a2321369198b",
+  "prompts": {},
+  "sessions": {
+    "s_fdaeb6307c5970": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5688491-e470-49bb-804d-7863f7b4f33f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Gleb Lobov <lobzison@gmail.com>"
+    }
+  }
+}
