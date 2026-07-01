@@ -33,7 +33,8 @@ class LlmFunctionalityImpl(
             _ <- msg.from.traverse_ { u =>
                      userHistoryRef.update { map =>
                          val buf =
-                             (map.getOrElse(u.id, Vector.empty) :+ newMsg).takeRight(config.recentUserMessages)
+                             (map.getOrElse(u.id, Vector.empty) :+ newMsg)
+                                 .takeRight(config.recentUserMessages)
                          map.updated(u.id, buf)
                      }
                  }
@@ -41,8 +42,7 @@ class LlmFunctionalityImpl(
 
     def maybeReply(msg: TextMessage): IO[Unit] =
         val fire =
-            mutex
-                .lock
+            mutex.lock
                 .surround(triggerReply(msg, msg.text.contains(config.botAlias)))
                 .handleErrorWith(e => IO.println(s"LLM reply failed: ${e.getMessage}"))
         for
@@ -68,14 +68,17 @@ class LlmFunctionalityImpl(
             case None       =>
                 IO.unit
             case Some(user) =>
-                val target = UserRef.fromUser(user)
+                val target      = UserRef.fromUser(user)
                 val triggerText = msg.text.replace(config.botAlias, config.botName)
-                val trigger     = if tagged then Trigger.Tagged(msg.text, replyToText) else Trigger.Random
+                val trigger     =
+                    if tagged then Trigger.Tagged(msg.text, replyToText) else Trigger.Random
 
                 val produce =
                     for
-                        recentChat <- contextRef.get.map(_.takeRight(config.replyContextWindow).toList)
-                        recentUser <- userHistoryRef.get.map(_.getOrElse(user.id, Vector.empty).toList)
+                        recentChat <-
+                            contextRef.get.map(_.takeRight(config.replyContextWindow).toList)
+                        recentUser <-
+                            userHistoryRef.get.map(_.getOrElse(user.id, Vector.empty).toList)
                         gen        <- profileService.generateReply(
                                         target,
                                         triggerText,
@@ -84,8 +87,8 @@ class LlmFunctionalityImpl(
                                         trigger
                                       )
                         _          <- contextRef.update(m =>
-                                        (m :+ LlmContextMessage(None, config.botName, gen.text))
-                                            .takeRight(config.chatBufferSize)
+                                          (m :+ LlmContextMessage(None, config.botName, gen.text))
+                                              .takeRight(config.chatBufferSize)
                                       )
                         _          <- sendIfNotEmpty(gen.text.trim)
                     yield gen

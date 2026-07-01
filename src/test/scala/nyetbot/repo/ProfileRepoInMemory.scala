@@ -11,7 +11,9 @@ class ProfileRepoInMemory(state: Ref[IO, Map[Long, Profile]]) extends ProfileRep
         state.get.map(_.get(userId))
 
     def upsertProfile(userId: Long, displayName: String, description: String): IO[Unit] =
-        state.update(_.updated(userId, Profile(userId, displayName, description, OffsetDateTime.MIN)))
+        state.update(
+          _.updated(userId, Profile(userId, displayName, description, OffsetDateTime.MIN))
+        )
 
 object ProfileRepoInMemory:
     def create: IO[ProfileRepoInMemory] =

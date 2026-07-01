@@ -25,8 +25,9 @@ trait ProfileService:
 
     def rewriteProfile(target: UserRef, gen: GeneratedReply): IO[Unit]
 
-class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: Config.LlmConfig)(using Random[IO])
-    extends ProfileService:
+class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: Config.LlmConfig)(using
+    Random[IO]
+) extends ProfileService:
 
     override def generateReply(
         target: UserRef,
@@ -43,14 +44,26 @@ class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: Config.LlmC
                               case Trigger.Random       => IO.pure(TagIntent.Contextual)
             minChars   <- targetMinChars(triggerText)
             text       <- llm.generateReply(
-                            ReplyContext(target, oldProfile, summary, recentChat, intent, minChars, triggerText)
+                            ReplyContext(
+                              target,
+                              oldProfile,
+                              summary,
+                              recentChat,
+                              intent,
+                              minChars,
+                              triggerText
+                            )
                           )
         yield GeneratedReply(text, summary, oldProfile)
 
     override def rewriteProfile(target: UserRef, gen: GeneratedReply): IO[Unit] =
         for
             merged <- llm.rewriteProfile(gen.oldProfile, gen.recentSummary, target)
-            _      <- repo.upsertProfile(target.id, target.displayName, Text.truncate(merged, config.profileMaxChars))
+            _      <- repo.upsertProfile(
+                        target.id,
+                        target.displayName,
+                        Text.truncate(merged, config.profileMaxChars)
+                      )
         yield ()
 
     private def targetMinChars(triggerText: String): IO[Int] =

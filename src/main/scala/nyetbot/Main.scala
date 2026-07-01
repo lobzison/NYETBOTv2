@@ -49,20 +49,20 @@ object Main extends IOApp.Simple:
         TelegramClient[IO]
     ): IO[List[Scenario[IO, Unit]]] =
         for
-            _                 <- IO.println("Starting NYETBOTv2")
-            given Random[IO]  <- Random.scalaUtilRandom[IO]
-            _                 <- fly4s.migrate
-            memeRepo           = MemeRepoDB(db)
-            swearRepo          = SwearRepoImpl(db)
-            swearService      <- SwearServiceCached(swearRepo)
-            swear              = SwearFunctionalityImpl(swearService)
-            service           <- MemeServiceCached(memeRepo)
-            meme               = MemeFunctionalityImpl(service)
-            profileRepo        = ProfileRepoDB(db)
-            ollamaService      = OllamaService(client, config.ollamaConfig, config.llmConfig)
-            profileService     = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
-            llm               <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
-            _                 <- IO.println("Ready")
+            _                <- IO.println("Starting NYETBOTv2")
+            given Random[IO] <- Random.scalaUtilRandom[IO]
+            _                <- fly4s.migrate
+            memeRepo          = MemeRepoDB(db)
+            swearRepo         = SwearRepoImpl(db)
+            swearService     <- SwearServiceCached(swearRepo)
+            swear             = SwearFunctionalityImpl(swearService)
+            service          <- MemeServiceCached(memeRepo)
+            meme              = MemeFunctionalityImpl(service)
+            profileRepo       = ProfileRepoDB(db)
+            ollamaService     = OllamaService(client, config.ollamaConfig, config.llmConfig)
+            profileService    = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
+            llm              <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
+            _                <- IO.println("Ready")
         yield List(
           meme.triggerMemeScenario
         ) ++ meme.memeManagementScenarios ++ swear.scenarios :+ llm.reply

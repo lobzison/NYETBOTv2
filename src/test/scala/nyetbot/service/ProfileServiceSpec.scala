@@ -11,11 +11,13 @@ import nyetbot.repo.ProfileRepoInMemory
 
 class ProfileServiceSpec extends CatsEffectSuite:
 
-    private class RecordingLlm(calls: Ref[IO, List[String]], rewriteOut: String = "обновлённое досье")
-        extends LlmService:
-        def generateReply(ctx: ReplyContext): IO[String] =
+    private class RecordingLlm(
+        calls: Ref[IO, List[String]],
+        rewriteOut: String = "обновлённое досье"
+    ) extends LlmService:
+        def generateReply(ctx: ReplyContext): IO[String]                                        =
             calls.update(_ :+ "generateReply").as("шиза-ответ")
-        def summarizeUser(recent: List[LlmContextMessage], who: UserRef): IO[String] =
+        def summarizeUser(recent: List[LlmContextMessage], who: UserRef): IO[String]            =
             calls.update(_ :+ "summarizeUser").as("свежая сводка")
         def rewriteProfile(oldProfile: String, recentSummary: String, who: UserRef): IO[String] =
             calls.update(_ :+ "rewriteProfile").as(rewriteOut)
@@ -30,7 +32,9 @@ class ProfileServiceSpec extends CatsEffectSuite:
     private val chat   = List(LlmContextMessage(Some(42L), "Гоша", "казино хуже"))
 
     private def mkService(repo: ProfileRepoInMemory, llm: LlmService): IO[ProfileServiceImpl] =
-        Random.scalaUtilRandom[IO].map(r => ProfileServiceImpl(repo, llm, Fixtures.llmConfig)(using r))
+        Random
+            .scalaUtilRandom[IO]
+            .map(r => ProfileServiceImpl(repo, llm, Fixtures.llmConfig)(using r))
 
     test("random trigger does no intent classification and keeps the call order") {
         for
@@ -49,7 +53,13 @@ class ProfileServiceSpec extends CatsEffectSuite:
             calls <- Ref.of[IO, List[String]](Nil)
             repo  <- ProfileRepoInMemory.create
             svc   <- mkService(repo, RecordingLlm(calls))
-            _     <- svc.generateReply(target, "триггер", chat, chat, Trigger.Tagged("эй бот", "исходное"))
+            _     <- svc.generateReply(
+                       target,
+                       "триггер",
+                       chat,
+                       chat,
+                       Trigger.Tagged("эй бот", "исходное")
+                     )
             seen  <- calls.get
         yield assertEquals(seen, List("summarizeUser", "classifyTagIntent", "generateReply"))
     }

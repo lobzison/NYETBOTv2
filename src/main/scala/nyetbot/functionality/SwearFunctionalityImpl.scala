@@ -12,7 +12,7 @@ import nyetbot.service.SwearService
 import scala.util.Try
 
 class SwearFunctionalityImpl(service: SwearService)(using
-    TelegramClient[IO],
+    TelegramClient[IO]
 ) extends SwearFunctionality
     with Discard[IO]:
     override def scenario: Scenario[IO, Unit] =

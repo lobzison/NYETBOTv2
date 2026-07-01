@@ -114,8 +114,13 @@ class OllamaService(
     llmConfig: Config.LlmConfig
 ) extends LlmService:
 
-    private def complete(model: String, prompt: String, numPredict: Int, temperature: Double): IO[String] =
-        val body =
+    private def complete(
+        model: String,
+        prompt: String,
+        numPredict: Int,
+        temperature: Double
+    ): IO[String] =
+        val body    =
             json"""{ "model": $model, "prompt": $prompt, "stream": false, "think": ${config.think},
                      "options": { "num_predict": $numPredict, "temperature": $temperature,
                                   "num_ctx": ${config.numCtx} } }"""
@@ -146,7 +151,11 @@ class OllamaService(
           config.utilityTemperature
         ).map(Text.truncate(_, llmConfig.summaryMaxChars))
 
-    override def rewriteProfile(oldProfile: String, recentSummary: String, who: UserRef): IO[String] =
+    override def rewriteProfile(
+        oldProfile: String,
+        recentSummary: String,
+        who: UserRef
+    ): IO[String] =
         complete(
           config.utilityModel,
           OllamaPrompts.rewrite(oldProfile, recentSummary, who, llmConfig),
@@ -164,4 +173,6 @@ class OllamaService(
           OllamaPrompts.intent(question, replyToText, recentChat, llmConfig),
           config.intentNumPredict,
           config.utilityTemperature
-        ).map(r => if r.toUpperCase.contains("NEW") then TagIntent.NewQuestion else TagIntent.Contextual)
+        ).map(r =>
+            if r.toUpperCase.contains("NEW") then TagIntent.NewQuestion else TagIntent.Contextual
+        )

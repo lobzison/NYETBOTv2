@@ -23,7 +23,10 @@ class OllamaPromptsSpec extends FunSuite:
     ) = ReplyContext(who, profile, summary, chat, intent, minChars, trigger)
 
     test("reply prompt carries target, profile, summary, minChars, trigger and schizo directive") {
-        val p = OllamaPrompts.reply(ctx(profile = "старый параноик", summary = "свежая сводка", minChars = 250), cfg)
+        val p = OllamaPrompts.reply(
+          ctx(profile = "старый параноик", summary = "свежая сводка", minChars = 250),
+          cfg
+        )
         assert(p.contains("Гоша Петров"))
         assert(p.contains("старый параноик"))
         assert(p.contains("свежая сводка"))
@@ -39,11 +42,17 @@ class OllamaPromptsSpec extends FunSuite:
     }
 
     test("reply prompt uses the contextual intent line") {
-        assert(OllamaPrompts.reply(ctx(intent = TagIntent.Contextual), cfg).contains("уже идущего спора"))
+        assert(
+          OllamaPrompts.reply(ctx(intent = TagIntent.Contextual), cfg).contains("уже идущего спора")
+        )
     }
 
     test("reply prompt uses the new-question intent line") {
-        assert(OllamaPrompts.reply(ctx(intent = TagIntent.NewQuestion), cfg).contains("новым, отдельным вопросом"))
+        assert(
+          OllamaPrompts
+              .reply(ctx(intent = TagIntent.NewQuestion), cfg)
+              .contains("новым, отдельным вопросом")
+        )
     }
 
     test("empty profile renders the newcomer placeholder") {
