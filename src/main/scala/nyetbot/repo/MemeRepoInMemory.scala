@@ -1,9 +1,7 @@
 package nyetbot.repo
 
-import cats.*
 import cats.effect.IO
 import cats.effect.kernel.Ref
-import cats.implicits.*
 import nyetbot.model.MemeCreationRequest
 import nyetbot.model.MemeId
 import nyetbot.model.MemeRow

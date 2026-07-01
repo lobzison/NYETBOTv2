@@ -67,10 +67,9 @@ class MemeFunctionalityImpl(service: MemeService)(using TelegramClient[IO])
                   )
                 )
             chanceString   <- Scenario.expect(text).handleDiscard
-            chance         <- Scenario.eval(parseChance(chanceString)).handleErrorWith {
-                                  case _: NumberFormatException =>
-                                      Scenario.eval(chat.send("Invalid chance, setting it to 1, IDGAS")) >>
-                                          Scenario.pure(1)
+            chance         <- Scenario.eval(parseChance(chanceString)).handleErrorWith { _ =>
+                                  Scenario.eval(chat.send("Invalid chance, setting it to 1, IDGAS")) >>
+                                      Scenario.pure(1)
                               }
             creationResult <- Scenario.eval(createMeme(trigger, meme, chance))
             _              <-

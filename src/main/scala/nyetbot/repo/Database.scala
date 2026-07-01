@@ -1,6 +1,5 @@
 package nyetbot.repo
 
-import cats.*
 import cats.effect.*
 import cats.effect.std.Console
 import fs2.io.net.Network
@@ -12,11 +11,11 @@ import skunk.*
 def buildSessionResource[F[_]: Temporal: Tracer: Meter: Network: Console](
     config: Config.DbConfig
 ): Resource[F, Session[F]] =
-    Session.single(
-      host = config.dbHost,
-      port = config.dbPort,
-      user = config.dbUser,
-      database = config.dbName,
-      password = Some(config.dbPassword),
-      ssl = SSL.Trusted
-    )
+    Session
+        .Builder[F]
+        .withHost(config.dbHost)
+        .withPort(config.dbPort)
+        .withUserAndPassword(config.dbUser, config.dbPassword)
+        .withDatabase(config.dbName)
+        .withSSL(SSL.Trusted)
+        .single

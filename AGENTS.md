@@ -12,14 +12,15 @@ and reacts to messages with three independent features:
 
 ## Stack
 
-- **Scala 3.8.3**, cats-effect 3 (`IO`, `Resource`, `Ref`, `Mutex`)
+- **Scala 3.8.4** on **sbt 2**, cats-effect 3 (`IO`, `Resource`, `Ref`, `Mutex`)
 - **canoe** — Telegram bot framework (forked, pinned; do not bump)
 - **skunk** — Postgres access via **raw SQL** (no query DSL)
 - **fly4s / Flyway** — DB migrations in `src/main/resources/db`
 - **http4s + blaze client** — talks to Ollama's `/api/generate`
 - **Typesafe Config** — tunables in `application.conf`; secrets from the environment
-- **munit + munit-cats-effect** — tests (pure/stubbed, no live Postgres or Ollama)
-- **sbt-pack** for packaging; **sbt-tpolecat**, **sbt-scalafix**, **sbt-scalafmt** for tooling
+- **munit + munit-cats-effect** — unit tests (pure/stubbed). Integration tests
+  (`FlywayDbIntegrationSpec`) run against a real embedded Postgres via **Zonky embedded-postgres**
+- **sbt-pack** for packaging; **sbt-tpolecat** (`-Werror`), **sbt-scalafix**, **sbt-scalafmt** for tooling
 
 ## Layout
 
@@ -50,16 +51,21 @@ deploy time with `-Dconfig.file=/path/to/application.conf`.
 
 ## Working on the code
 
-Every change **must compile, pass tests, and be formatted** before it is committed. Tests are
-pure/stubbed, so no database or Ollama instance is required to run them.
+Every change **must compile, pass tests, and be formatted** before it is committed. Unit tests
+are pure/stubbed (no Ollama or external DB). The integration tests (`FlywayDbIntegrationSpec`)
+spin up a real embedded Postgres in-process — no Docker required, but the first run downloads a
+Postgres binary. `-Werror` is on (via sbt-tpolecat), so any warning fails the build.
+
+This is an **sbt 2** build; two things differ from sbt 1:
+- Chain multiple commands with semicolons inside one quoted string, not as separate arguments.
+- `sbt test` is **incremental** — it skips suites whose inputs are unchanged. Use `sbt "testOnly *"`
+  (or clear `~/.cache/sbt`) to force the whole suite.
 
 ```sh
-sbt test                                  # compiles main + test sources and runs the suite
-sbt scalafmt scalafmtSbt Test/scalafmt    # format main sources, *.sbt / project files, and test sources
+sbt "testOnly *"                              # run every test (unit + integration)
+sbt "scalafmt; scalafmtSbt; Test/scalafmt"    # format main, *.sbt/project, and test sources
+sbt "scalafmtCheckAll; scalafmtSbtCheck"      # check formatting only (e.g. CI)
 ```
-
-To only check formatting without rewriting files (e.g. in CI), use
-`sbt scalafmtCheckAll scalafmtSbtCheck`.
 
 The formatting config is `.scalafmt.conf` (4-space indent, `align.preset = most`,
 `maxColumn = 100`, Scala 3 dialect) — do not change it as part of an unrelated change.
