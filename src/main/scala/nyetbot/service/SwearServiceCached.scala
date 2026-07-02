@@ -5,6 +5,7 @@ import cats.effect.IO
 import cats.effect.kernel.Ref
 import cats.effect.std.Random
 import cats.implicits.*
+import io.github.iltotore.iron.*
 import nyetbot.model.*
 import nyetbot.repo.SwearRepo
 
@@ -28,7 +29,7 @@ class SwearServiceCached(
         for
             swearStorage <- inMemory.get
             body          = swearStorage.swearRows.map(s =>
-                                List(s.id.value.toString, s.swear.value, s.weight.toString)
+                                List(s.id.value.toString, s.swear.value, s.weight.value.toString)
                             )
             drawer       <- TableDrawer.create[IO](header.length, header :: body)
         yield drawer.buildHtmlCodeTable
@@ -58,7 +59,7 @@ class SwearServiceCached(
         // and triggered quire rarely
         val (swear, _) = swears.foldLeft((None: Option[Swear], 0)) {
             case ((maybeSwear, currentWeight), currentSwear) =>
-                val nextWeight = currentWeight + currentSwear.weight
+                val nextWeight = currentWeight + currentSwear.weight.value
                 if roll >= currentWeight && roll < nextWeight then
                     (Some(currentSwear.swear), nextWeight)
                 else (maybeSwear, nextWeight)
@@ -68,7 +69,7 @@ class SwearServiceCached(
     def addSwearGroup(groupChance: Chance): IO[Unit] =
         vault.addSwearGroup(groupChance) >> updateInMemoryRepresentation
 
-    def addSwear(groupId: SwearGroupId, swear: Swear, weight: Int): IO[Unit] =
+    def addSwear(groupId: SwearGroupId, swear: Swear, weight: Weight): IO[Unit] =
         val performUpdate = vault.addSwear(groupId, swear, weight) >> updateInMemoryRepresentation
         val raiseError    = IO.raiseError[Unit](
           new IllegalArgumentException(s"Swear group with id $groupId does not exist")
@@ -111,6 +112,6 @@ object SwearServiceCached:
                 case ((_, chance1), (_, chance2)) => chance1.value < chance2.value
             }
         val swearsById         = swearRows.groupBy(_.groupId).map { case id -> swears =>
-            id -> SwearGroup(swears.map(_.weight).sum, swears)
+            id -> SwearGroup(swears.map(_.weight.value).sum, swears)
         }
         SwearMemoryStorage(swearRows, swearGroupsOrdered, swearsById)

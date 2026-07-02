@@ -20,7 +20,7 @@ trait LlmFunctionality:
 class LlmFunctionalityImpl(
     profileService: ProfileService,
     contextRef: Ref[IO, Vector[LlmContextMessage]],
-    userHistoryRef: Ref[IO, Map[Long, Vector[LlmContextMessage]]],
+    userHistoryRef: Ref[IO, Map[UserId, Vector[LlmContextMessage]]],
     mutex: Mutex[IO],
     config: LlmConfig
 )(using TelegramClient[IO], Random[IO])
@@ -33,9 +33,9 @@ class LlmFunctionalityImpl(
             _ <- msg.from.traverse_ { u =>
                      userHistoryRef.update { map =>
                          val buf =
-                             (map.getOrElse(u.id, Vector.empty) :+ newMsg)
+                             (map.getOrElse(UserId(u.id), Vector.empty) :+ newMsg)
                                  .takeRight(config.recentUserMessages)
-                         map.updated(u.id, buf)
+                         map.updated(UserId(u.id), buf)
                      }
                  }
         yield ()
@@ -78,7 +78,9 @@ class LlmFunctionalityImpl(
                         recentChat <-
                             contextRef.get.map(_.takeRight(config.replyContextWindow).toList)
                         recentUser <-
-                            userHistoryRef.get.map(_.getOrElse(user.id, Vector.empty).toList)
+                            userHistoryRef.get.map(
+                              _.getOrElse(UserId(user.id), Vector.empty).toList
+                            )
                         gen        <- profileService.generateReply(
                                         target,
                                         triggerText,
@@ -112,5 +114,5 @@ object LlmFunctionalityImpl:
         for
             m       <- Mutex[IO]
             r       <- Ref.of[IO, Vector[LlmContextMessage]](Vector.empty)
-            perUser <- Ref.of[IO, Map[Long, Vector[LlmContextMessage]]](Map.empty)
+            perUser <- Ref.of[IO, Map[UserId, Vector[LlmContextMessage]]](Map.empty)
         yield LlmFunctionalityImpl(profileService, r, perUser, m, config)

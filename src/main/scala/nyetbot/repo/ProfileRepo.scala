@@ -1,8 +1,12 @@
 package nyetbot.repo
 
 import cats.effect.IO
-import nyetbot.model.Profile
+import nyetbot.model.*
 
 trait ProfileRepo:
-    def getProfile(userId: Long): IO[Option[Profile]]
-    def upsertProfile(userId: Long, displayName: String, description: String): IO[Unit]
+    def getProfile(userId: UserId): IO[Option[Profile]]
+    def upsertProfile(
+        userId: UserId,
+        displayName: DisplayName,
+        description: ProfileDescription
+    ): IO[Unit]

@@ -3,9 +3,12 @@ package nyetbot.service
 import cats.effect.IO
 import cats.effect.Ref
 import cats.effect.std.Random
+import io.github.iltotore.iron.*
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
+import nyetbot.model.DisplayName
 import nyetbot.model.LlmContextMessage
+import nyetbot.model.UserId
 import nyetbot.model.UserRef
 import nyetbot.repo.ProfileRepoInMemory
 
@@ -28,8 +31,8 @@ class ProfileServiceSpec extends CatsEffectSuite:
         ): IO[TagIntent] =
             calls.update(_ :+ "classifyTagIntent").as(TagIntent.NewQuestion)
 
-    private val target = UserRef(42L, "Гоша")
-    private val chat   = List(LlmContextMessage(Some(42L), "Гоша", "казино хуже"))
+    private val target = UserRef(UserId(42L), DisplayName("Гоша"))
+    private val chat   = List(LlmContextMessage(Some(UserId(42L)), "Гоша", "казино хуже"))
 
     private def mkService(repo: ProfileRepoInMemory, llm: LlmService): IO[ProfileServiceImpl] =
         Random
@@ -71,10 +74,10 @@ class ProfileServiceSpec extends CatsEffectSuite:
             repo  <- ProfileRepoInMemory.create
             svc   <- mkService(repo, RecordingLlm(calls, rewriteOut = longOut))
             _     <- svc.rewriteProfile(target, GeneratedReply("t", "сводка", "старое"))
-            saved <- repo.getProfile(42L)
+            saved <- repo.getProfile(UserId(42L))
         yield
             assert(saved.isDefined)
-            assertEquals(saved.get.description.length, 300)
+            assertEquals(saved.get.description.value.length, 300)
     }
 
     test("an empty stored profile is forwarded as an empty oldProfile") {

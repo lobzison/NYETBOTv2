@@ -6,6 +6,8 @@ import fly4s.Fly4s
 import fly4s.data.Fly4sConfig
 import fly4s.data.Locations
 import io.circe.Json
+import io.github.iltotore.iron.*
+import io.github.iltotore.iron.constraint.all.*
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import munit.CatsEffectSuite
 import nyetbot.model.*
@@ -59,11 +61,15 @@ class FlywayDbIntegrationSpec extends CatsEffectSuite:
     test("user_profile (V1_5) round-trips through ProfileRepoDB") {
         val repo = ProfileRepoDB(db())
         for
-            _   <- repo.upsertProfile(42L, "Гоша", "любит казино")
-            got <- repo.getProfile(42L)
+            _   <- repo.upsertProfile(
+                     UserId(42L),
+                     DisplayName("Гоша"),
+                     ProfileDescription("любит казино")
+                   )
+            got <- repo.getProfile(UserId(42L))
         yield
-            assertEquals(got.map(_.displayName), Some("Гоша"))
-            assertEquals(got.map(_.description), Some("любит казино"))
+            assertEquals(got.map(_.displayName.value), Some("Гоша"))
+            assertEquals(got.map(p => p.description.value: String), Some("любит казино"))
     }
 
     test("memes (V1_0/V1_1) round-trip a json body through the skunk-circe codec") {
@@ -78,5 +84,5 @@ class FlywayDbIntegrationSpec extends CatsEffectSuite:
         yield
             assertEquals(rows.size, 1)
             assertEquals(rows.head.body, body)
-            assertEquals(rows.head.chance, 3)
+            assertEquals(rows.head.chance.value, 3)
     }

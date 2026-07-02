@@ -2,11 +2,12 @@ package nyetbot.service
 
 import cats.effect.IO
 import cats.effect.std.Random
+import io.github.iltotore.iron.*
 import nyetbot.Config
 import nyetbot.model.LlmContextMessage
+import nyetbot.model.ProfileDescription
 import nyetbot.model.UserRef
 import nyetbot.repo.ProfileRepo
-import nyetbot.util.Text
 
 enum Trigger:
     case Random
@@ -37,7 +38,7 @@ class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: Config.LlmC
         trigger: Trigger
     ): IO[GeneratedReply] =
         for
-            oldProfile <- repo.getProfile(target.id).map(_.map(_.description).getOrElse(""))
+            oldProfile <- repo.getProfile(target.id).map(_.map(_.description.value).getOrElse(""))
             summary    <- llm.summarizeUser(recentUserMsgs, target)
             intent     <- trigger match
                               case Trigger.Tagged(q, r) => llm.classifyTagIntent(q, r, recentChat)
@@ -62,7 +63,7 @@ class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: Config.LlmC
             _      <- repo.upsertProfile(
                         target.id,
                         target.displayName,
-                        Text.truncate(merged, config.profileMaxChars)
+                        ProfileDescription.truncate(merged)
                       )
         yield ()
 

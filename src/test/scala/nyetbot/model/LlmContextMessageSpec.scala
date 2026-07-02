@@ -22,7 +22,7 @@ class LlmContextMessageSpec extends FunSuite:
           from = Some(user(42L, "Гоша", Some("Петров"), Some("gosha")))
         )
         val m   = LlmContextMessage.fromTextMessage(msg, Fixtures.llmConfig)
-        assertEquals(m.userId, Some(42L))
+        assertEquals(m.userId, Some(UserId(42L)))
         assertEquals(m.text, "привет")
         assert(m.userName.contains("Гоша"))
     }
@@ -36,7 +36,7 @@ class LlmContextMessageSpec extends FunSuite:
 
     test("UserRef.fromUser builds id and a display name that includes the handle") {
         val ref = UserRef.fromUser(user(7L, "Аня", None, Some("anya")))
-        assertEquals(ref.id, 7L)
-        assert(ref.displayName.contains("Аня"))
-        assert(ref.displayName.contains("@anya"))
+        assertEquals(ref.id, UserId(7L))
+        assert(ref.displayName.value.contains("Аня"))
+        assert(ref.displayName.value.contains("@anya"))
     }

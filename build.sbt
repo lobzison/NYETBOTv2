@@ -22,6 +22,9 @@ lazy val commonSettings = Seq(
     "org.flywaydb"        % "flyway-database-postgresql" % "12.10.0",
     "org.postgresql"      % "postgresql"                 % "42.7.12",
 
+    // Iron: refined types + newtypes for the domain model.
+    "io.github.iltotore" %% "iron" % "3.3.1",
+
     // Promoted from canoe transitives — pinned directly so eviction picks ours
     // rather than canoe's older declared versions.
     "org.typelevel" %% "cats-core"           % "2.13.0",

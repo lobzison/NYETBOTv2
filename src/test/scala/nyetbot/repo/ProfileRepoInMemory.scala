@@ -2,19 +2,23 @@ package nyetbot.repo
 
 import cats.effect.IO
 import cats.effect.Ref
-import nyetbot.model.Profile
+import nyetbot.model.*
 
 import java.time.OffsetDateTime
 
-class ProfileRepoInMemory(state: Ref[IO, Map[Long, Profile]]) extends ProfileRepo:
-    def getProfile(userId: Long): IO[Option[Profile]] =
+class ProfileRepoInMemory(state: Ref[IO, Map[UserId, Profile]]) extends ProfileRepo:
+    def getProfile(userId: UserId): IO[Option[Profile]] =
         state.get.map(_.get(userId))
 
-    def upsertProfile(userId: Long, displayName: String, description: String): IO[Unit] =
+    def upsertProfile(
+        userId: UserId,
+        displayName: DisplayName,
+        description: ProfileDescription
+    ): IO[Unit] =
         state.update(
           _.updated(userId, Profile(userId, displayName, description, OffsetDateTime.MIN))
         )
 
 object ProfileRepoInMemory:
     def create: IO[ProfileRepoInMemory] =
-        Ref.of[IO, Map[Long, Profile]](Map.empty).map(ProfileRepoInMemory(_))
+        Ref.of[IO, Map[UserId, Profile]](Map.empty).map(ProfileRepoInMemory(_))

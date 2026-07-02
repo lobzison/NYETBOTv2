@@ -2,16 +2,18 @@ package nyetbot.service
 
 import munit.FunSuite
 import nyetbot.Fixtures
+import nyetbot.model.DisplayName
 import nyetbot.model.LlmContextMessage
+import nyetbot.model.UserId
 import nyetbot.model.UserRef
 
 class OllamaPromptsSpec extends FunSuite:
 
     private val cfg  = Fixtures.llmConfig
-    private val who  = UserRef(42L, "Гоша Петров")
+    private val who  = UserRef(UserId(42L), DisplayName("Гоша Петров"))
     private val chat = List(
-      LlmContextMessage(Some(1L), "Seb", "банки говно"),
-      LlmContextMessage(Some(42L), "Гоша", "казино хуже")
+      LlmContextMessage(Some(UserId(1L)), "Seb", "банки говно"),
+      LlmContextMessage(Some(UserId(42L)), "Гоша", "казино хуже")
     )
 
     private def ctx(

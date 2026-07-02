@@ -14,7 +14,10 @@ import cats.implicits.toTraverseOps
 import io.circe.Json
 import io.circe.generic.auto.*
 import io.circe.syntax.*
+import io.github.iltotore.iron.*
+import io.github.iltotore.iron.constraint.all.*
 import nyetbot.Config.LlmConfig
+import nyetbot.util.Text
 import skunk.*
 import skunk.circe.codec.json.json
 import skunk.codec.all.*
@@ -32,15 +35,29 @@ object SwearId:
     inline def apply(id: Int): SwearId           = id
     extension (x: SwearId) inline def value: Int = x
 
-opaque type Swear = String
-object Swear:
-    inline def apply(s: String): Swear            = s
-    extension (x: Swear) inline def value: String = x
+type Swear = Swear.T
+object Swear extends RefinedType[String, Not[Empty]]
 
-opaque type Chance = Int
-object Chance:
-    inline def apply(id: Int): Chance           = id
-    extension (x: Chance) inline def value: Int = x
+type Chance = Chance.T
+object Chance extends RefinedType[Int, Positive]
+
+type Weight = Weight.T
+object Weight extends RefinedType[Int, Positive]
+
+type ProfileDescription = ProfileDescription.T
+object ProfileDescription extends RefinedType[String, MaxLength[300]]:
+    def truncate(s: String): ProfileDescription =
+        either(Text.truncate(s, 300)).getOrElse(ProfileDescription(""))
+
+opaque type UserId = Long
+object UserId:
+    inline def apply(id: Long): UserId           = id
+    extension (x: UserId) inline def value: Long = x
+
+opaque type DisplayName = String
+object DisplayName:
+    inline def apply(s: String): DisplayName            = s
+    extension (x: DisplayName) inline def value: String = x
 
 opaque type SwearGroupId = Int
 object SwearGroupId:
@@ -88,28 +105,30 @@ object SupportedMemeType:
 
 case class Meme(id: MemeId, trigger: MemeTrigger, body: SupportedMemeType, chance: Chance)
 
-case class MemeCreationRequest(trigger: String, body: SupportedMemeType, chance: Int):
+case class MemeCreationRequest(trigger: String, body: SupportedMemeType, chance: Chance):
     def toPersisted(id: MemeId): MemeRow                 =
         MemeRow(id, MemeTriggerUserSyntax(trigger), body.asJson, chance)
     def toPersistedRequest: MemeCreationRequestPersisted =
-        MemeCreationRequestPersisted(trigger, body.asJson, chance)
+        MemeCreationRequestPersisted(trigger, body.asJson, chance.value)
 
 case class MemeCreationRequestPersisted(trigger: String, body: Json, chance: Int)
 
-case class MemeRow(id: MemeId, trigger: MemeTriggerUserSyntax, body: Json, chance: Int):
+case class MemeRow(id: MemeId, trigger: MemeTriggerUserSyntax, body: Json, chance: Chance):
     def toMeme[F[_]: MonadThrow]: F[Meme] =
         for parsedBody <- MonadThrow[F].fromEither(body.as[SupportedMemeType])
         yield Meme(
           id,
           trigger.toMemeTriggered,
           parsedBody,
-          Chance(chance)
+          chance
         )
 
 object MemeRow:
     val memePersisted: Decoder[MemeRow] =
-        (int4 ~ text ~ json ~ int4).map { case id ~ trigger ~ body ~ chance =>
-            MemeRow(MemeId(id), MemeTriggerUserSyntax(trigger), body, chance)
+        (int4 ~ text ~ json ~ int4).emap { case id ~ trigger ~ body ~ chance =>
+            Chance
+                .either(chance)
+                .map(c => MemeRow(MemeId(id), MemeTriggerUserSyntax(trigger), body, c))
         }
 
 extension (memes: List[MemeRow])
@@ -121,19 +140,18 @@ case class SwearRow(
     groupChance: Chance,
     id: SwearId,
     swear: Swear,
-    weight: Int
+    weight: Weight
 )
 
 object SwearRow:
     val swearRow: Decoder[SwearRow] =
-        (int4 ~ int4 ~ int4 ~ text ~ int4).map { case groupId ~ groupChance ~ id ~ swear ~ weight =>
-            SwearRow(
-              SwearGroupId(groupId),
-              Chance(groupChance),
-              SwearId(id),
-              Swear(swear),
-              weight
-            )
+        (int4 ~ int4 ~ int4 ~ text ~ int4).emap {
+            case groupId ~ groupChance ~ id ~ swear ~ weight =>
+                for
+                    chance <- Chance.either(groupChance)
+                    sw     <- Swear.either(swear)
+                    wt     <- Weight.either(weight)
+                yield SwearRow(SwearGroupId(groupId), chance, SwearId(id), sw, wt)
         }
 
 case class SwearMemoryStorage(
@@ -144,30 +162,30 @@ case class SwearMemoryStorage(
 
 case class SwearGroup(totalWeight: Int, swears: List[SwearRow])
 
-final case class LlmContextMessage(userId: Option[Long], userName: String, text: String)
+final case class LlmContextMessage(userId: Option[UserId], userName: String, text: String)
 
 object LlmContextMessage:
     def fromTextMessage(t: TextMessage, config: LlmConfig): LlmContextMessage =
         val user = t.from
             .map(u => s"${config.userPrefix}${u.firstName}_${u.lastName.getOrElse("")}")
             .getOrElse("user")
-        LlmContextMessage(t.from.map(_.id), user, t.text)
+        LlmContextMessage(t.from.map(u => UserId(u.id)), user, t.text)
 
-final case class UserRef(id: Long, displayName: String)
+final case class UserRef(id: UserId, displayName: DisplayName)
 object UserRef:
     def fromUser(u: canoe.models.User): UserRef =
         val last   = u.lastName.map(" " + _).getOrElse("")
         val handle = u.username.map(n => s" (@$n)").getOrElse("")
-        UserRef(u.id, s"${u.firstName}$last$handle")
+        UserRef(UserId(u.id), DisplayName(s"${u.firstName}$last$handle"))
 
 final case class Profile(
-    userId: Long,
-    displayName: String,
-    description: String,
+    userId: UserId,
+    displayName: DisplayName,
+    description: ProfileDescription,
     updatedAt: OffsetDateTime
 )
 object Profile:
     val codec: Decoder[Profile] =
-        (int8 ~ text ~ text ~ timestamptz).map { case id ~ dn ~ desc ~ ts =>
-            Profile(id, dn, desc, ts)
+        (int8 ~ text ~ text ~ timestamptz).emap { case id ~ dn ~ desc ~ ts =>
+            ProfileDescription.either(desc).map(d => Profile(UserId(id), DisplayName(dn), d, ts))
         }

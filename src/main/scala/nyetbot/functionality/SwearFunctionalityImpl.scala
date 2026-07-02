@@ -6,6 +6,7 @@ import canoe.models.messages.*
 import canoe.syntax.*
 import cats.*
 import cats.effect.IO
+import io.github.iltotore.iron.*
 import nyetbot.model.{*, given}
 import nyetbot.service.SwearService
 
@@ -89,10 +90,16 @@ class SwearFunctionalityImpl(service: SwearService)(using
             res          <- Scenario.eval(IO.fromTry(Try(chanceString.toInt))).attempt
             _            <- res.fold(
                               _ => Scenario.eval(chat.send("Invalid chance, please send integer")),
-                              chance =>
-                                  Scenario.eval(
-                                    service.addSwearGroup(Chance(chance)) >> chat.send("Swear group added")
-                                  )
+                              rawChance =>
+                                  Chance
+                                      .either(rawChance)
+                                      .fold(
+                                        _ => Scenario.eval(chat.send("Chance must be a positive integer")),
+                                        chance =>
+                                            Scenario.eval(
+                                              service.addSwearGroup(chance) >> chat.send("Swear group added")
+                                            )
+                                      )
                             )
         yield ()
 
@@ -125,9 +132,17 @@ class SwearFunctionalityImpl(service: SwearService)(using
                                        Scenario.eval(
                                          chat.send("Invalid weight id, send integer")
                                        ),
-                                   weight =>
-                                       Scenario.eval(service.addSwear(groupId, Swear(swearString), weight)) >>
-                                           Scenario.eval(chat.send("Swear added"))
+                                   rawWeight =>
+                                       (Swear.either(swearString), Weight.either(rawWeight)) match
+                                           case (Right(swear), Right(weight)) =>
+                                               Scenario.eval(service.addSwear(groupId, swear, weight)) >>
+                                                   Scenario.eval(chat.send("Swear added"))
+                                           case _                             =>
+                                               Scenario.eval(
+                                                 chat.send(
+                                                   "Swear must be non-empty and weight a positive integer"
+                                                 )
+                                               )
                                  )
         yield ()
 

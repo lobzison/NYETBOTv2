@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.kernel.Ref
 import cats.effect.std.Random
 import cats.implicits.*
+import io.github.iltotore.iron.*
 import nyetbot.model.*
 import nyetbot.repo.MemeRepo
 

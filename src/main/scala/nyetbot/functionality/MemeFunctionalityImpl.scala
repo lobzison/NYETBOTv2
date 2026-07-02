@@ -7,6 +7,8 @@ import canoe.syntax.*
 import cats.*
 import cats.effect.IO
 import cats.implicits.*
+import io.github.iltotore.iron.*
+import io.github.iltotore.iron.constraint.all.*
 import nyetbot.model.{*, given}
 import nyetbot.service.MemeService
 
@@ -69,7 +71,7 @@ class MemeFunctionalityImpl(service: MemeService)(using TelegramClient[IO])
             chanceString   <- Scenario.expect(text).handleDiscard
             chance         <- Scenario.eval(parseChance(chanceString)).handleErrorWith { _ =>
                                   Scenario.eval(chat.send("Invalid chance, setting it to 1, IDGAS")) >>
-                                      Scenario.pure(1)
+                                      Scenario.pure(Chance(1))
                               }
             creationResult <- Scenario.eval(createMeme(trigger, meme, chance))
             _              <-
@@ -80,7 +82,11 @@ class MemeFunctionalityImpl(service: MemeService)(using TelegramClient[IO])
                 )
         yield ()
 
-    private def createMeme(trigger: String, meme: TelegramMessage, chance: Int): IO[Option[Unit]] =
+    private def createMeme(
+        trigger: String,
+        meme: TelegramMessage,
+        chance: Chance
+    ): IO[Option[Unit]] =
         val memeTypeOpt = SupportedMemeType.fromTelegramMessage(meme)
         memeTypeOpt.traverse(memeType =>
             service.addMeme(MemeCreationRequest(trigger, memeType, chance))
@@ -98,9 +104,9 @@ class MemeFunctionalityImpl(service: MemeService)(using TelegramClient[IO])
             _          <- chat.send(textContent(memesTable).copy(parseMode = Some(ParseMode.HTML)))
         yield ()
 
-    private def parseChance(chanceString: String): IO[Int] =
+    private def parseChance(chanceString: String): IO[Chance] =
         for chanceParsed <- IO.fromTry(Try(chanceString.toInt))
-        yield chanceParsed.max(1)
+        yield Chance.option(chanceParsed).getOrElse(Chance(1))
 
     def deleteMemeScenario: Scenario[IO, Unit] =
         for
