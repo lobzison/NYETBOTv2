@@ -15,6 +15,8 @@ and reacts to messages with three independent features:
 - **Scala 3.8.4** on **sbt 2**, cats-effect 3 (`IO`, `Resource`, `Ref`, `Mutex`)
 - **canoe** — Telegram bot framework (forked, pinned; do not bump)
 - **skunk** — Postgres access via **raw SQL** (no query DSL)
+- **Iron** — refined types (`io.github.iltotore.iron`) for the domain model in `model/`; domain
+  values are validated at construction (see **Domain modelling** below)
 - **fly4s / Flyway** — DB migrations in `src/main/resources/db`
 - **http4s + blaze client** — talks to Ollama's `/api/generate`
 - **Typesafe Config** — tunables in `application.conf`; secrets from the environment
@@ -36,6 +38,25 @@ Code is organised in layers under `src/main/scala/nyetbot/`:
 `Main` (an `IOApp.Simple`) wires the dependencies (Telegram client, config, Flyway, skunk
 `Session`, http4s client), runs migrations, builds the scenarios, starts a health server plus
 heartbeat, and auto-restarts on non-fatal errors.
+
+## Domain modelling
+
+Domain values are **typed, never raw primitives**. Two complementary techniques live in `model/`:
+
+- **Iron refined types** — `RefinedType[Base, Constraint]` bakes an invariant into the type so an
+  invalid value is unrepresentable:
+  - `Chance` / `Weight` = `RefinedType[Int, Positive]`
+  - `Swear` = `RefinedType[String, Not[Empty]]`
+  - `ProfileDescription` = `RefinedType[String, MaxLength[300]]`
+
+  Construct through the companion: `X.either(v)` for runtime input that can fail, `X(v)` for
+  known-valid literals. Once built, the type carries the guarantee — don't re-validate downstream.
+- **Opaque-type newtypes** (plain Scala 3) wrap identifiers so they can't be transposed:
+  `MemeId`, `SwearId`, `UserId`, `SwearGroupId`, `DisplayName`, `MemeTrigger`.
+
+When adding a domain value, prefer one of these over a bare `Int`/`String`/`Long` — reach for an
+Iron refined type whenever the value has an invariant (non-empty, positive, bounded length, …),
+and a newtype whenever a primitive is really an identifier.
 
 ## Configuration
 
