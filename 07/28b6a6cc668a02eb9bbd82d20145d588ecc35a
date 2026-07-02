@@ -1,0 +1,105 @@
+src/main/scala/nyetbot/service/SwearServiceCached.scala
+  s_fdaeb6307c5970::t_7ecfddda673dbb 8
+  s_fdaeb6307c5970::t_118561d8a2a54c 62
+  s_fdaeb6307c5970::t_53588c852b9f0f 72
+  s_fdaeb6307c5970::t_9fca70cae4ee23 32
+  s_fdaeb6307c5970::t_3883a579bdae1a 115
+src/test/scala/nyetbot/service/ProfileServiceSpec.scala
+  s_fdaeb6307c5970::t_e1d344e5b7dd5f 6,9,11
+  s_fdaeb6307c5970::t_bb73a4e96ae066 77,80
+  s_fdaeb6307c5970::t_79c4ccde2aca28 34-35
+src/main/scala/nyetbot/service/ProfileService.scala
+  s_fdaeb6307c5970::t_9ac15f6a1f80ba 5,8
+  s_fdaeb6307c5970::t_d1591e5a66b71f 41
+  s_fdaeb6307c5970::t_44844436d642ac 66
+src/main/scala/nyetbot/model/GivenInstances.scala
+  s_fdaeb6307c5970::t_79cfc1f78b04eb 4,10
+src/main/scala/nyetbot/service/MemeServiceCached.scala
+  s_fdaeb6307c5970::t_40e258a354b968 7
+src/main/scala/nyetbot/repo/ProfileRepoDB.scala
+  s_fdaeb6307c5970::t_f3d0db80a52049 13,18
+  s_fdaeb6307c5970::t_729829570e4ca4 5
+  s_fdaeb6307c5970::t_b7d827c22260f5 32
+  s_fdaeb6307c5970::t_d6f1aa14120244 20-24
+src/main/scala/nyetbot/functionality/LlmFunctionality.scala
+  s_fdaeb6307c5970::t_3ceb46ada6c31c 36,38
+  s_fdaeb6307c5970::t_2cdbf7d3c33194 23
+  s_fdaeb6307c5970::t_0048e059c8d869 117
+  s_fdaeb6307c5970::t_d6f1aa14120244 81-83
+src/main/scala/nyetbot/service/SwearService.scala
+  s_fdaeb6307c5970::t_15492c2d23db3e 12
+src/main/scala/nyetbot/repo/SwearRepo.scala
+  s_fdaeb6307c5970::t_03a70dbfa8fb05 9
+src/test/scala/nyetbot/repo/ProfileRepoInMemory.scala
+  s_fdaeb6307c5970::t_d6f1aa14120244 13-17
+  s_fdaeb6307c5970::t_ecfd1d63578f7e 9-10
+  s_fdaeb6307c5970::t_0a55952f42c4a8 5
+  s_fdaeb6307c5970::t_721e7b8db0a007 24
+src/main/scala/nyetbot/repo/SwearRepoImpl.scala
+  s_fdaeb6307c5970::t_461e411d6b543e 22,25
+  s_fdaeb6307c5970::t_ab4c82c100d71c 5
+  s_fdaeb6307c5970::t_d6f1aa14120244 12,18,26,30
+src/test/scala/nyetbot/model/LlmContextMessageSpec.scala
+  s_fdaeb6307c5970::t_9d31fdc7b344c5 39-41
+  s_fdaeb6307c5970::t_ddc9b9f14293af 25
+src/test/scala/nyetbot/repo/FlywayDbIntegrationSpec.scala
+  s_fdaeb6307c5970::t_883badc9ece646 72
+  s_fdaeb6307c5970::t_a1e343b4bdb492 10
+  s_fdaeb6307c5970::t_a9951a4633d67b 67
+  s_fdaeb6307c5970::t_2d969a49d439b8 87
+  s_fdaeb6307c5970::t_1cf83897624e64 64-66,68-69,71
+  s_fdaeb6307c5970::t_3f5a0cec802bf0 9
+src/test/scala/nyetbot/service/OllamaPromptsSpec.scala
+  s_fdaeb6307c5970::t_5329d524b5029f 13,15-16
+  s_fdaeb6307c5970::t_62460d8a511dc9 5,7
+src/main/scala/nyetbot/functionality/MemeFunctionalityImpl.scala
+  s_fdaeb6307c5970::t_4de10676209299 10-11
+  s_fdaeb6307c5970::t_ab101357e46fd4 74
+  s_fdaeb6307c5970::t_d6f1aa14120244 85-89
+  s_fdaeb6307c5970::t_3b66675f8f7f65 107
+  s_fdaeb6307c5970::t_31963f3349139a 109
+src/main/scala/nyetbot/model/Models.scala
+  s_fdaeb6307c5970::t_dc211f78465bcc 174,179
+  s_fdaeb6307c5970::t_df8fb5f5d6e808 143
+  s_fdaeb6307c5970::t_7fce153c080231 48-50
+  s_fdaeb6307c5970::t_0c8200bdf2bb73 108,112
+  s_fdaeb6307c5970::t_7812850ddfadc7 172
+  s_fdaeb6307c5970::t_7ca626fd16d1f5 182-184
+  s_fdaeb6307c5970::t_d6f1aa14120244 129-131,148-154
+  s_fdaeb6307c5970::t_d9b773da40bbac 20
+  s_fdaeb6307c5970::t_886a8d8b7bfc56 17-18
+  s_fdaeb6307c5970::t_7c20801954cd4b 165
+  s_fdaeb6307c5970::t_ea5e485c99742d 38-39,41-47,51-60
+  s_fdaeb6307c5970::t_fcd511c98790de 189-190
+  s_fdaeb6307c5970::t_a954f636bd8ae4 128
+  s_fdaeb6307c5970::t_9bda93b9ac966e 123
+  s_fdaeb6307c5970::t_31d6935683bfb2 116
+src/main/scala/nyetbot/functionality/SwearFunctionalityImpl.scala
+  s_fdaeb6307c5970::t_3a2cf4a60e45ce 93-96,98-102
+  s_fdaeb6307c5970::t_5b18ee871bd7db 9
+  s_fdaeb6307c5970::t_d6f1aa14120244 97
+  s_fdaeb6307c5970::t_26359e887b172c 135-145
+build.sbt
+  s_fdaeb6307c5970::t_92c5a656c1d9e1 25
+  s_fdaeb6307c5970::t_57febed35306c8 27
+  s_fdaeb6307c5970::t_d6f1aa14120244 26
+src/main/scala/nyetbot/repo/ProfileRepo.scala
+  s_fdaeb6307c5970::t_66dabb107b4b6b 4,7
+  s_fdaeb6307c5970::t_d6f1aa14120244 8-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "0728b6a6cc668a02eb9bbd82d20145d588ecc35a",
+  "prompts": {},
+  "sessions": {
+    "s_fdaeb6307c5970": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5688491-e470-49bb-804d-7863f7b4f33f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Gleb Lobov <lobzison@gmail.com>"
+    }
+  }
+}
