@@ -62,10 +62,11 @@ object Main extends IOApp.Simple:
             ollamaService     = OllamaService(client, config.ollamaConfig, config.llmConfig)
             profileService    = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
             llm              <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
+            mediaRelay        = MediaRelayFunctionalityImpl(MediaRelayServiceImpl())
             _                <- IO.println("Ready")
         yield List(
           meme.triggerMemeScenario
-        ) ++ meme.memeManagementScenarios ++ swear.scenarios :+ llm.reply
+        ) ++ meme.memeManagementScenarios ++ swear.scenarios :+ llm.reply :+ mediaRelay.scenario
 
     def app(scenarios: List[Scenario[IO, Unit]], heartbeatService: HeartbeatService)(using
         TelegramClient[IO]

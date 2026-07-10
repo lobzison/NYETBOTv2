@@ -90,3 +90,6 @@ sbt "scalafmtCheckAll; scalafmtSbtCheck"      # check formatting only (e.g. CI)
 
 The formatting config is `.scalafmt.conf` (4-space indent, `align.preset = most`,
 `maxColumn = 100`, Scala 3 dialect) — do not change it as part of an unrelated change.
+
+**Never** write any comments
+**Never** commit changes unless explicitly asked to
