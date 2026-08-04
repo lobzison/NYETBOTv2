@@ -9,10 +9,15 @@ class ConfigSpec extends FunSuite:
         val root = ConfigFactory.load().getConfig("nyetbot")
         assertEquals(root.getInt("llm.message-every"), 150)
         assertEquals(root.getInt("llm.profile-max-chars"), 300)
-        assertEquals(root.getInt("llm.reply.min-chars"), 200)
+        assertEquals(root.getInt("llm.topic-context-window"), 10)
+        assertEquals(root.getInt("llm.reply.min-chars"), 150)
+        assertEquals(root.getInt("llm.reply.max-chars"), 600)
         assertEquals(root.getString("ollama.reply-model"), "NYETBOTv1")
         assertEquals(root.getString("ollama.utility-model"), "gemma4:e4b")
+        assertEquals(root.getDouble("ollama.reply-temperature"), 0.85)
         assertEquals(root.getDouble("ollama.utility-temperature"), 0.2)
+        assertEquals(root.getInt("ollama.topic-num-predict"), 160)
+        assertEquals(root.getInt("ollama.register-num-predict"), 6)
     }
 
     test("buildDbConfig parses a postgres URL into its parts") {

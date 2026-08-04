@@ -11,11 +11,12 @@ object Fixtures:
       llmMessageEvery = 150,
       chatBufferSize = 200,
       replyContextWindow = 20,
+      topicContextWindow = 10,
       recentUserMessages = 50,
       profileMaxChars = 300,
       summaryMaxChars = 500,
-      replyMinChars = 200,
+      replyMinChars = 150,
       replyMeanFactor = 1.5,
       replySpread = 0.3,
-      replyMaxChars = 900
+      replyMaxChars = 600
     )
