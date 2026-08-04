@@ -1,0 +1,19 @@
+ollama_image/Modelfile
+  s_50968794ec2049::t_f98116c407a9cc 11-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "6353ff702dcd5bc6996df3316d2ed33febf58571",
+  "prompts": {},
+  "sessions": {
+    "s_50968794ec2049": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1b568f6a-4bed-41d1-885a-7602c07e1514",
+        "model": "unknown"
+      },
+      "human_author": "Gleb Lobov <lobzison@gmail.com>"
+    }
+  }
+}
