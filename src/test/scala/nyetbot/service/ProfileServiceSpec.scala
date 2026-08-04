@@ -16,10 +16,15 @@ class ProfileServiceSpec extends CatsEffectSuite:
 
     private class RecordingLlm(
         calls: Ref[IO, List[String]],
-        rewriteOut: String = "обновлённое досье"
+        rewriteOut: String = "обновлённое досье",
+        replyContexts: Option[Ref[IO, List[ReplyContext]]] = None
     ) extends LlmService:
         def generateReply(ctx: ReplyContext): IO[String]                                        =
-            calls.update(_ :+ "generateReply").as("шиза-ответ")
+            calls.update(_ :+ "generateReply").flatMap { _ =>
+                replyContexts match
+                    case Some(contexts) => contexts.update(_ :+ ctx).as("шиза-ответ")
+                    case None           => IO.pure("шиза-ответ")
+            }
         def summarizeUser(recent: List[LlmContextMessage], who: UserRef): IO[String]            =
             calls.update(_ :+ "summarizeUser").as("свежая сводка")
         def rewriteProfile(oldProfile: String, recentSummary: String, who: UserRef): IO[String] =
@@ -44,7 +49,7 @@ class ProfileServiceSpec extends CatsEffectSuite:
             calls <- Ref.of[IO, List[String]](Nil)
             repo  <- ProfileRepoInMemory.create
             svc   <- mkService(repo, RecordingLlm(calls))
-            gen   <- svc.generateReply(target, "триггер", chat, chat, Trigger.Random)
+            gen   <- svc.generateReply(target, "триггер", chat, chat, Trigger.Random(""))
             seen  <- calls.get
         yield
             assertEquals(gen.text, "шиза-ответ")
@@ -61,10 +66,50 @@ class ProfileServiceSpec extends CatsEffectSuite:
                        "триггер",
                        chat,
                        chat,
-                       Trigger.Tagged("эй бот", "исходное")
+                       Trigger.Tagged("эй бот", "исходное", replyToBot = false)
                      )
             seen  <- calls.get
         yield assertEquals(seen, List("summarizeUser", "classifyTagIntent", "generateReply"))
+    }
+
+    test("random trigger forwards ordinary reply-to text without marking it as the bot") {
+        for
+            calls    <- Ref.of[IO, List[String]](Nil)
+            contexts <- Ref.of[IO, List[ReplyContext]](Nil)
+            repo     <- ProfileRepoInMemory.create
+            svc      <- mkService(repo, RecordingLlm(calls, replyContexts = Some(contexts)))
+            _        <- svc.generateReply(
+                          target,
+                          "случайное сообщение",
+                          chat,
+                          chat,
+                          Trigger.Random("сообщение другого человека")
+                        )
+            captured <- contexts.get
+        yield
+            assertEquals(captured.size, 1)
+            assertEquals(captured.head.replyToText, "сообщение другого человека")
+            assert(!captured.head.replyToBot)
+    }
+
+    test("reply-to-bot details reach the reply context") {
+        for
+            calls    <- Ref.of[IO, List[String]](Nil)
+            contexts <- Ref.of[IO, List[ReplyContext]](Nil)
+            repo     <- ProfileRepoInMemory.create
+            svc      <- mkService(repo, RecordingLlm(calls, replyContexts = Some(contexts)))
+            _        <- svc.generateReply(
+                          target,
+                          "возражение",
+                          chat,
+                          chat,
+                          Trigger.Tagged("возражение", "позиция бота", replyToBot = true)
+                        )
+            captured <- contexts.get
+        yield
+            assertEquals(captured.size, 1)
+            assertEquals(captured.head.replyToText, "позиция бота")
+            assert(captured.head.replyToBot)
     }
 
     test("rewriteProfile persists a description truncated to <= 300 chars") {
@@ -85,6 +130,6 @@ class ProfileServiceSpec extends CatsEffectSuite:
             calls <- Ref.of[IO, List[String]](Nil)
             repo  <- ProfileRepoInMemory.create
             svc   <- mkService(repo, RecordingLlm(calls))
-            gen   <- svc.generateReply(target, "триггер", chat, chat, Trigger.Random)
+            gen   <- svc.generateReply(target, "триггер", chat, chat, Trigger.Random(""))
         yield assertEquals(gen.oldProfile, "")
     }

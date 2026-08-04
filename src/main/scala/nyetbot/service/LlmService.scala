@@ -24,7 +24,9 @@ final case class ReplyContext(
     recentChat: List[LlmContextMessage],
     intent: TagIntent,
     minChars: Int,
-    triggerText: String
+    triggerText: String,
+    replyToText: String,
+    replyToBot: Boolean
 )
 
 trait LlmService:
@@ -43,12 +45,28 @@ object OllamaPrompts:
         chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
 
     def reply(ctx: ReplyContext, cfg: Config.LlmConfig): String =
-        val intentLine = ctx.intent match
+        val intentLine          = ctx.intent match
             case TagIntent.Contextual  =>
                 "Тебя дёрнули внутри уже идущего спора — отвечай в контексте нити."
             case TagIntent.NewQuestion =>
                 "Тебя дёрнули с новым, отдельным вопросом — отвечай именно на него, старьё не тащи."
-        val dossier    = if ctx.profile.isEmpty then "нет данных, новичок" else ctx.profile
+        val dossier             = if ctx.profile.isEmpty then "нет данных, новичок" else ctx.profile
+        val replyToBlock        =
+            if ctx.replyToText.isEmpty then ""
+            else
+                val marker =
+                    if ctx.replyToBot then
+                        "(это ТВОЁ прошлое сообщение — собеседник отвечает тебе)\n"
+                    else ""
+                s"""
+[НА ЧТО ОН ОТВЕЧАЕТ]
+$marker${ctx.replyToText}
+"""
+        val replyToBotDirective =
+            if ctx.replyToBot then
+                """
+Собеседник ответил на твоё сообщение: отстаивай или докручивай свою позицию, отвечай именно на его возражение и не повторяй уже сказанное тобой."""
+            else ""
         s"""[ДОСЬЕ НА СОБЕСЕДНИКА]
 Кого разносишь: ${ctx.target.displayName}
 Его давнее досье (как вёл себя раньше): $dossier
@@ -56,7 +74,7 @@ object OllamaPrompts:
 
 [КОНТЕКСТ ЧАТА]
 ${renderChat(ctx.recentChat, cfg)}
-
+$replyToBlock
 [СООБЩЕНИЕ, НА КОТОРОЕ ОТВЕЧАЕШЬ]
 ${ctx.target.displayName}${cfg.inputPrefix}${ctx.triggerText}
 
@@ -65,7 +83,7 @@ ${ctx.target.displayName}${cfg.inputPrefix}${ctx.triggerText}
 Пиши строго по-русски, плотным заходом не короче ${ctx.minChars} символов.
 Ты задёрганный параноик, ветеран двача с забористой шизой: цепляйся за одну самую подозрительную
 деталь, разворачивай её в сюрреалистичную гипер-конкретную параноидальную метафору, наезжай и
-провоцируй, но держись темы. Не объясняй метафоры, не извиняйся, не ломай образ."""
+провоцируй, но держись темы. Не объясняй метафоры, не извиняйся, не ломай образ.$replyToBotDirective"""
 
     def summary(recent: List[LlmContextMessage], who: UserRef, cfg: Config.LlmConfig): String =
         s"""Ниже последние сообщения пользователя ${who.displayName} из чата.

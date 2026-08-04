@@ -40,18 +40,28 @@ class LlmFunctionalityImpl(
                  }
         yield ()
 
+    def isReplyToBot(msg: TextMessage): Boolean =
+        msg.replyToMessage.exists {
+            case t: TextMessage =>
+                t.from.exists(u =>
+                    u.isBot && u.username.exists(un => ("@" + un).equalsIgnoreCase(config.botAlias))
+                )
+            case _              => false
+        }
+
     def maybeReply(msg: TextMessage): IO[Unit] =
-        val fire =
+        val tagged     = msg.text.contains(config.botAlias)
+        val replyToBot = isReplyToBot(msg)
+        val fire       =
             mutex.lock
-                .surround(triggerReply(msg, msg.text.contains(config.botAlias)))
+                .surround(triggerReply(msg, tagged, replyToBot))
                 .handleErrorWith(e => IO.println(s"LLM reply failed: ${e.getMessage}"))
         for
-            roll  <- Random[IO].betweenInt(0, config.llmMessageEvery)
-            tagged = msg.text.contains(config.botAlias)
-            _     <- if roll == 0 || tagged then fire else IO.unit
+            roll <- Random[IO].betweenInt(0, config.llmMessageEvery)
+            _    <- if roll == 0 || tagged || replyToBot then fire else IO.unit
         yield ()
 
-    def triggerReply(msg: TextMessage, tagged: Boolean): IO[Unit] =
+    def triggerReply(msg: TextMessage, tagged: Boolean, replyToBot: Boolean): IO[Unit] =
         def sendIfNotEmpty(s: String) =
             if s.nonEmpty then msg.chat.send(s, replyToMessageId = Some(msg.messageId)).void
             else IO.unit
@@ -71,7 +81,8 @@ class LlmFunctionalityImpl(
                 val target      = UserRef.fromUser(user)
                 val triggerText = msg.text.replace(config.botAlias, config.botName)
                 val trigger     =
-                    if tagged then Trigger.Tagged(msg.text, replyToText) else Trigger.Random
+                    if tagged || replyToBot then Trigger.Tagged(msg.text, replyToText, replyToBot)
+                    else Trigger.Random(replyToText)
 
                 val produce =
                     for

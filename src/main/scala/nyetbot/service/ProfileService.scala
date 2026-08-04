@@ -10,8 +10,8 @@ import nyetbot.model.UserRef
 import nyetbot.repo.ProfileRepo
 
 enum Trigger:
-    case Random
-    case Tagged(question: String, replyToText: String)
+    case Random(replyToText: String)
+    case Tagged(question: String, replyToText: String, replyToBot: Boolean)
 
 final case class GeneratedReply(text: String, recentSummary: String, oldProfile: String)
 
@@ -38,23 +38,28 @@ class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: Config.LlmC
         trigger: Trigger
     ): IO[GeneratedReply] =
         for
-            oldProfile <- repo.getProfile(target.id).map(_.map(_.description.value).getOrElse(""))
-            summary    <- llm.summarizeUser(recentUserMsgs, target)
-            intent     <- trigger match
-                              case Trigger.Tagged(q, r) => llm.classifyTagIntent(q, r, recentChat)
-                              case Trigger.Random       => IO.pure(TagIntent.Contextual)
-            minChars   <- targetMinChars(triggerText)
-            text       <- llm.generateReply(
-                            ReplyContext(
-                              target,
-                              oldProfile,
-                              summary,
-                              recentChat,
-                              intent,
-                              minChars,
-                              triggerText
-                            )
-                          )
+            oldProfile                       <- repo.getProfile(target.id).map(_.map(_.description.value).getOrElse(""))
+            summary                          <- llm.summarizeUser(recentUserMsgs, target)
+            details                          <- trigger match
+                                                    case Trigger.Tagged(q, r, replyToBot) =>
+                                                        llm.classifyTagIntent(q, r, recentChat).map((_, r, replyToBot))
+                                                    case Trigger.Random(replyToText)      =>
+                                                        IO.pure((TagIntent.Contextual, replyToText, false))
+            (intent, replyToText, replyToBot) = details
+            minChars                         <- targetMinChars(triggerText)
+            text                             <- llm.generateReply(
+                                                  ReplyContext(
+                                                    target,
+                                                    oldProfile,
+                                                    summary,
+                                                    recentChat,
+                                                    intent,
+                                                    minChars,
+                                                    triggerText,
+                                                    replyToText,
+                                                    replyToBot
+                                                  )
+                                                )
         yield GeneratedReply(text, summary, oldProfile)
 
     override def rewriteProfile(target: UserRef, gen: GeneratedReply): IO[Unit] =

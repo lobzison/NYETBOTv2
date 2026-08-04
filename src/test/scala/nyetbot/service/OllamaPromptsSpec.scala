@@ -21,8 +21,20 @@ class OllamaPromptsSpec extends FunSuite:
         summary: String = "s",
         intent: TagIntent = TagIntent.Contextual,
         minChars: Int = 200,
-        trigger: String = "клава за 200 баксов"
-    ) = ReplyContext(who, profile, summary, chat, intent, minChars, trigger)
+        trigger: String = "клава за 200 баксов",
+        replyToText: String = "",
+        replyToBot: Boolean = false
+    ) = ReplyContext(
+      who,
+      profile,
+      summary,
+      chat,
+      intent,
+      minChars,
+      trigger,
+      replyToText,
+      replyToBot
+    )
 
     test("reply prompt carries target, profile, summary, minChars, trigger and schizo directive") {
         val p = OllamaPrompts.reply(
@@ -41,6 +53,42 @@ class OllamaPromptsSpec extends FunSuite:
         val p = OllamaPrompts.reply(ctx(trigger = "уникальный-триггер-текст"), cfg)
         assert(p.contains("уникальный-триггер-текст"))
         assert(p.contains("[СООБЩЕНИЕ, НА КОТОРОЕ ОТВЕЧАЕШЬ]"))
+    }
+
+    test(
+      "reply prompt marks the bot message being replied to and adds the continuation directive"
+    ) {
+        val p            = OllamaPrompts.reply(
+          ctx(replyToText = "моя прошлая позиция", replyToBot = true),
+          cfg
+        )
+        val contextIndex = p.indexOf("[КОНТЕКСТ ЧАТА]")
+        val replyToIndex = p.indexOf("[НА ЧТО ОН ОТВЕЧАЕТ]")
+        val triggerIndex = p.indexOf("[СООБЩЕНИЕ, НА КОТОРОЕ ОТВЕЧАЕШЬ]")
+        assert(contextIndex < replyToIndex)
+        assert(replyToIndex < triggerIndex)
+        assert(p.contains("(это ТВОЁ прошлое сообщение — собеседник отвечает тебе)"))
+        assert(p.contains("моя прошлая позиция"))
+        assert(
+          p.contains(
+            "Собеседник ответил на твоё сообщение: отстаивай или докручивай свою позицию, " +
+                "отвечай именно на его возражение и не повторяй уже сказанное тобой."
+          )
+        )
+    }
+
+    test("ordinary reply prompt omits the bot ownership marker") {
+        val p = OllamaPrompts.reply(
+          ctx(replyToText = "сообщение другого человека", replyToBot = false),
+          cfg
+        )
+        assert(p.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
+        assert(!p.contains("(это ТВОЁ прошлое сообщение — собеседник отвечает тебе)"))
+    }
+
+    test("reply prompt omits the reply-to block when reply-to text is empty") {
+        val p = OllamaPrompts.reply(ctx(replyToText = "", replyToBot = false), cfg)
+        assert(!p.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
     }
 
     test("reply prompt uses the contextual intent line") {
