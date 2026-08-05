@@ -45,7 +45,7 @@ class LlmFunctionalityImpl(
             case t: TextMessage =>
                 t.from.exists(u =>
                     u.isBot && u.username.exists(un => ("@" + un).equalsIgnoreCase(config.botAlias))
-                )
+                ) && t.quote.isEmpty
             case _              => false
         }
 

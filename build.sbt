@@ -12,7 +12,7 @@ lazy val commonSettings = Seq(
     // Forked canoe, pinned. Do not touch — its transitives are intentionally
     // overridden by the explicit versions below so the main project controls
     // its own dependency versions.
-    "org.augustjune" %% "canoe" % "0.1-SNAPSHOT",
+    "org.augustjune" %% "canoe" % "0.2-SNAPSHOT",
 
     // Direct dependencies
     "co.fs2"             %% "fs2-core"                   % "3.13.0",
