@@ -1,0 +1,18 @@
+build.sbt
+  h_3867216a1574d4 15
+canoe
+  h_3867216a1574d4 1
+src/main/scala/nyetbot/functionality/LlmFunctionality.scala
+  h_3867216a1574d4 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "79a297aadf19993c2267db49d6a1001585234b5d",
+  "prompts": {},
+  "humans": {
+    "h_3867216a1574d4": {
+      "author": "Gleb Lobov <lobzison@gmail.com>"
+    }
+  }
+}
