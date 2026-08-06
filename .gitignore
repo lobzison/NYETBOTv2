@@ -10,3 +10,4 @@ metals.sbt
 .idea_modules/
 .envrc
 *.bin
+*.semanticdb
