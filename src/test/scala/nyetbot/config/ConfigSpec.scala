@@ -40,7 +40,7 @@ class ConfigSpec extends FunSuite:
     }
 
     test("buildDbConfig parses a postgres URL into its parts") {
-        val db = Config.buildDbConfig("postgres://user:pass@host:5432/mydb")
+        val db = DbConfig("postgres://user:pass@host:5432/mydb")
         assertEquals(db.dbHost, "host")
         assertEquals(db.dbPort, 5432)
         assertEquals(db.dbName, "mydb")

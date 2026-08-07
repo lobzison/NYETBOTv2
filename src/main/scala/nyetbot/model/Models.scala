@@ -16,7 +16,7 @@ import io.circe.generic.auto.*
 import io.circe.syntax.*
 import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.all.*
-import nyetbot.config.Config.LlmConfig
+import nyetbot.config.LlmConfig
 import nyetbot.util.Text
 import skunk.*
 import skunk.circe.codec.json.json

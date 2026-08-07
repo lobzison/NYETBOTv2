@@ -3,7 +3,7 @@ package nyetbot.service
 import cats.effect.IO
 import io.circe.Json
 import io.circe.literal.json
-import nyetbot.config.Config
+import nyetbot.config.OllamaConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserRef
 import nyetbot.util.Text
@@ -12,6 +12,7 @@ import org.http4s.Request
 import org.http4s.Uri
 import org.http4s.circe.*
 import org.http4s.client.Client
+import nyetbot.config.LlmConfig
 
 enum TagIntent:
     case Contextual
@@ -56,7 +57,7 @@ trait LlmService:
 
 object OllamaPrompts:
 
-    private def renderChat(chat: List[LlmContextMessage], cfg: Config.LlmConfig): String =
+    private def renderChat(chat: List[LlmContextMessage], cfg: LlmConfig): String =
         chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
 
     private def registerLine(register: Register): String = register match
@@ -72,7 +73,7 @@ object OllamaPrompts:
         case Register.Byt     =>
             "Это бытовая болтовня: вбрось свой тейк по теме как участник, без наезда на человека."
 
-    def reply(ctx: ReplyContext, cfg: Config.LlmConfig): String =
+    def reply(ctx: ReplyContext, cfg: LlmConfig): String =
         val intentLine          = ctx.intent match
             case TagIntent.Contextual  =>
                 "Тебя дёрнули внутри уже идущего спора — отвечай в контексте нити."
@@ -128,7 +129,7 @@ ${registerLine(ctx.register)}
 Держи один грамматический род собеседника в пределах ответа.
 Не извиняйся, не ломай образ, не будь полезным ассистентом.$replyToBotDirective"""
 
-    def summary(recent: List[LlmContextMessage], who: UserRef, cfg: Config.LlmConfig): String =
+    def summary(recent: List[LlmContextMessage], who: UserRef, cfg: LlmConfig): String =
         s"""Ниже последние сообщения пользователя ${who.displayName} из чата.
 Составь сжатую нейтральную сводку: о чём он пишет, какая позиция, манера, повторяющиеся темы.
 Только описание поведения, без ролей, без оценок, без обращений. Не больше ${cfg.summaryMaxChars} символов.
@@ -138,7 +139,7 @@ ${renderChat(recent, cfg)}
 
 СВОДКА:"""
 
-    def topic(recentChat: List[LlmContextMessage], cfg: Config.LlmConfig): String =
+    def topic(recentChat: List[LlmContextMessage], cfg: LlmConfig): String =
         s"""Ниже фрагмент группового чата. Опиши в 2-3 предложениях, о чём сейчас идёт разговор:
 тема, что утверждают участники, ключевые детали (цифры, названия, факты). Нейтрально, без оценок.
 
@@ -150,7 +151,7 @@ ${renderChat(recentChat, cfg)}
     def register(
         triggerText: String,
         recentChat: List[LlmContextMessage],
-        cfg: Config.LlmConfig
+        cfg: LlmConfig
     ): String =
         s"""Определи тип последнего сообщения в чате.
 
@@ -169,7 +170,7 @@ BYT — бытовая болтовня, статус, мелочь
 Ответь одним словом: SPOR, SOBYTIE, SHUTKA, VOPROS или BYT.
 Ответ:"""
 
-    def rewrite(oldProfile: String, summary: String, who: UserRef, cfg: Config.LlmConfig): String =
+    def rewrite(oldProfile: String, summary: String, who: UserRef, cfg: LlmConfig): String =
         val old = if oldProfile.isEmpty then "пусто" else oldProfile
         s"""Есть старое досье на пользователя ${who.displayName} и свежая сводка его поведения.
 Слей их в одно обновлённое досье: сохрани важное из старого, добавь новое, выкинь устаревшее.
@@ -187,7 +188,7 @@ $summary
         question: String,
         replyToText: String,
         recentChat: List[LlmContextMessage],
-        cfg: Config.LlmConfig
+        cfg: LlmConfig
     ): String =
         val repliedTo = if replyToText.isEmpty then "нет" else replyToText
         s"""Определи, к чему относится обращение к боту.
@@ -202,8 +203,8 @@ ${renderChat(recentChat, cfg)}
 
 class OllamaService(
     client: Client[IO],
-    config: Config.OllamaConfig,
-    llmConfig: Config.LlmConfig,
+    config: OllamaConfig,
+    llmConfig: LlmConfig,
     ollamaDomain: String
 ) extends LlmService:
 

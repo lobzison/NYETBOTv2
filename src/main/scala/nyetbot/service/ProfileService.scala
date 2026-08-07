@@ -4,7 +4,7 @@ import cats.effect.Clock
 import cats.effect.IO
 import cats.effect.std.Random
 import io.github.iltotore.iron.*
-import nyetbot.config.Config
+import nyetbot.config.LlmConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileDescription
 import nyetbot.model.UserRef
@@ -31,7 +31,7 @@ trait ProfileService:
 
     def rewriteProfile(target: UserRef, gen: GeneratedReply): IO[Unit]
 
-class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: Config.LlmConfig)(using
+class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: LlmConfig)(using
     Random[IO]
 ) extends ProfileService:
 

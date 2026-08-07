@@ -1,6 +1,7 @@
 package nyetbot
 
-import nyetbot.config.Config.{LlmConfig, ReplyConfig}
+import nyetbot.config.LlmConfig
+import nyetbot.config.ReplyConfig
 
 object Fixtures:
     val llmConfig: LlmConfig = LlmConfig(

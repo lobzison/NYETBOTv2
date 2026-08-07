@@ -36,7 +36,7 @@ object Main extends IOApp.Simple:
         implicit val noopTracer: Tracer[IO] = Tracer.noop
         implicit val noopMeter: Meter[IO]   = Meter.noop
         for
-            config <- Config.configResource[IO]
+            config <- Config.configResource
             tg     <- TelegramClient.global[IO](config.botToken)
             fly4s  <- fly4sRes[IO](config.dbConfig)
             db     <- buildSessionResource[IO](config.dbConfig)
