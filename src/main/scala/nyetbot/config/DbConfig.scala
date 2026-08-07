@@ -12,7 +12,8 @@ case class DbConfig(
     migrationsLocations: List[String]
 ):
     val jdbcUrl =
-        "jdbc:postgresql://" + dbHost + ':' + dbPort + '/' + dbName + "?sslmode=require"
+        "jdbc:postgresql://" + dbHost + ':' + dbPort + '/' + dbName + "?ssl=false"
+
 object DbConfig:
     def apply(fullDbUrl: String): DbConfig =
         val dbUri = new URI(fullDbUrl)

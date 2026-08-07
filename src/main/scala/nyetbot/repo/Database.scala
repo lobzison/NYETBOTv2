@@ -17,5 +17,5 @@ def buildSessionResource[F[_]: Temporal: Tracer: Meter: Network: Console](
         .withPort(config.dbPort)
         .withUserAndPassword(config.dbUser, config.dbPassword)
         .withDatabase(config.dbName)
-        .withSSL(SSL.Trusted)
+        .withSSL(SSL.None)
         .single

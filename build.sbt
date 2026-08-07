@@ -39,6 +39,12 @@ lazy val commonSettings = Seq(
   )
 )
 
+addCommandAlias(
+  "runTest",
+  """set Compile / run / fork := true; set Compile / run / javaOptions
+    += "-Dconfig.resource=test.conf"; run"""
+)
+
 lazy val core =
     project
         .in(file("."))
