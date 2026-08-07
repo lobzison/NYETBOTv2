@@ -60,7 +60,8 @@ object Main extends IOApp.Simple:
             service          <- MemeServiceCached(memeRepo)
             meme              = MemeFunctionalityImpl(service)
             profileRepo       = ProfileRepoDB(db)
-            ollamaService     = OllamaService(client, config.ollamaConfig, config.llmConfig)
+            ollamaService     =
+                OllamaService(client, config.ollamaConfig, config.llmConfig, config.ollamaDomain)
             profileService    = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
             llm              <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
             mediaRelay        = MediaRelayFunctionalityImpl(MediaRelayServiceImpl())

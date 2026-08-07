@@ -96,8 +96,8 @@ class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: Config.LlmC
         Clock[IO].realTimeInstant.map(_.atZone(ZoneId.systemDefault()).format(currentDateFormatter))
 
     private def targetMinChars(triggerText: String): IO[Int] =
-        val base = if triggerText.nonEmpty then triggerText.length else config.replyMinChars
-        Random[IO].betweenDouble(-config.replySpread, config.replySpread).map { jitter =>
-            val target = (config.replyMeanFactor * base * (1.0 + jitter)).toInt
-            target.max(config.replyMinChars).min(config.replyMaxChars)
+        val base = if triggerText.nonEmpty then triggerText.length else config.reply.minChars
+        Random[IO].betweenDouble(-config.reply.spread, config.reply.spread).map { jitter =>
+            val target = (config.reply.meanFactor * base * (1.0 + jitter)).toInt
+            target.max(config.reply.minChars).min(config.reply.maxChars)
         }

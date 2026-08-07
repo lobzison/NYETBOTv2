@@ -2,38 +2,44 @@ package nyetbot.config
 
 import cats.effect.kernel.Resource
 import cats.effect.kernel.Sync
-import com.typesafe.config.ConfigFactory
+import pureconfig.ConfigReader
+import pureconfig.ConfigSource
 
 import java.net.URI
 
 case class Config(
     botToken: String,
+    ollamaDomain: String,
     dbConfig: Config.DbConfig,
     llmConfig: Config.LlmConfig,
     ollamaConfig: Config.OllamaConfig
 )
 
 object Config:
+    final case class ReplyConfig(
+        minChars: Int,
+        meanFactor: Double,
+        spread: Double,
+        maxChars: Int
+    ) derives ConfigReader
+
     final case class LlmConfig(
         botName: String,
         botAlias: String,
         userPrefix: String,
         inputPrefix: String,
-        llmMessageEvery: Int,
+        messageEvery: Int,
         chatBufferSize: Int,
         replyContextWindow: Int,
         topicContextWindow: Int,
         recentUserMessages: Int,
         profileMaxChars: Int,
         summaryMaxChars: Int,
-        replyMinChars: Int,
-        replyMeanFactor: Double,
-        replySpread: Double,
-        replyMaxChars: Int
-    )
+        reply: ReplyConfig
+    ) derives ConfigReader
 
     final case class OllamaConfig(
-        uri: String,
+        port: Int,
         replyModel: String,
         utilityModel: String,
         replyTemperature: Double,
@@ -48,7 +54,16 @@ object Config:
         think: Boolean,
         requestTimeoutMinutes: Int,
         idleTimeoutMinutes: Int
-    )
+    ) derives ConfigReader:
+        def uri(domain: String): String = s"http://$domain:$port"
+
+    final case class RawConfig(
+        botToken: String,
+        databaseUrl: String,
+        ollamaDomain: String,
+        llm: LlmConfig,
+        ollama: OllamaConfig
+    ) derives ConfigReader
 
     case class DbConfig(
         dbHost: String,
@@ -63,54 +78,15 @@ object Config:
             "jdbc:postgresql://" + dbHost + ':' + dbPort + '/' + dbName + "?sslmode=require"
 
     def build[F[_]: Sync]: F[Config] = Sync[F].delay {
-        val root = ConfigFactory.load().getConfig("nyetbot")
-        val llm  = root.getConfig("llm")
-        val oll  = root.getConfig("ollama")
+        val settings = ConfigSource.default.at("nyetbot").loadOrThrow[RawConfig]
 
-        val botToken     = sys.env("NYETBOT_KEY")
-        val databaseUrl  = sys.env("DATABASE_URL")
-        val ollamaDomain = sys.env("OLLAMA_DOMAIN")
-
-        val messageEvery =
-            sys.env.get("LLM_MESSAGE_EVERY").map(_.toInt).getOrElse(llm.getInt("message-every"))
-
-        val llmConfig = LlmConfig(
-          botName = llm.getString("bot-name"),
-          botAlias = llm.getString("bot-alias"),
-          userPrefix = llm.getString("user-prefix"),
-          inputPrefix = llm.getString("input-prefix"),
-          llmMessageEvery = messageEvery,
-          chatBufferSize = llm.getInt("chat-buffer-size"),
-          replyContextWindow = llm.getInt("reply-context-window"),
-          topicContextWindow = llm.getInt("topic-context-window"),
-          recentUserMessages = llm.getInt("recent-user-messages"),
-          profileMaxChars = llm.getInt("profile-max-chars"),
-          summaryMaxChars = llm.getInt("summary-max-chars"),
-          replyMinChars = llm.getInt("reply.min-chars"),
-          replyMeanFactor = llm.getDouble("reply.mean-factor"),
-          replySpread = llm.getDouble("reply.spread"),
-          replyMaxChars = llm.getInt("reply.max-chars")
+        Config(
+          botToken = settings.botToken,
+          ollamaDomain = settings.ollamaDomain,
+          dbConfig = buildDbConfig(settings.databaseUrl),
+          llmConfig = settings.llm,
+          ollamaConfig = settings.ollama
         )
-
-        val ollamaConfig = OllamaConfig(
-          uri = s"http://$ollamaDomain:${oll.getInt("port")}",
-          replyModel = oll.getString("reply-model"),
-          utilityModel = oll.getString("utility-model"),
-          replyTemperature = oll.getDouble("reply-temperature"),
-          utilityTemperature = oll.getDouble("utility-temperature"),
-          replyNumPredict = oll.getInt("reply-num-predict"),
-          summaryNumPredict = oll.getInt("summary-num-predict"),
-          rewriteNumPredict = oll.getInt("rewrite-num-predict"),
-          intentNumPredict = oll.getInt("intent-num-predict"),
-          topicNumPredict = oll.getInt("topic-num-predict"),
-          registerNumPredict = oll.getInt("register-num-predict"),
-          numCtx = oll.getInt("num-ctx"),
-          think = oll.getBoolean("think"),
-          requestTimeoutMinutes = oll.getInt("request-timeout-minutes"),
-          idleTimeoutMinutes = oll.getInt("idle-timeout-minutes")
-        )
-
-        Config(botToken, buildDbConfig(databaseUrl), llmConfig, ollamaConfig)
     }
 
     def buildDbConfig(fullDbUrl: String): DbConfig =
