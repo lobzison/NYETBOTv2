@@ -1,4 +1,4 @@
-package nyetbot
+package nyetbot.config
 
 import cats.effect.kernel.Resource
 import cats.effect.kernel.Sync

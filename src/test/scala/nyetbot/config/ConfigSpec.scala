@@ -1,4 +1,4 @@
-package nyetbot
+package nyetbot.config
 
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite

@@ -3,7 +3,7 @@ package nyetbot.repo
 import cats.effect.*
 import cats.effect.std.Console
 import fs2.io.net.Network
-import nyetbot.Config
+import nyetbot.config.Config
 import org.typelevel.otel4s.metrics.Meter
 import org.typelevel.otel4s.trace.Tracer
 import skunk.*

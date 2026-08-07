@@ -4,7 +4,7 @@ import cats.effect.Clock
 import cats.effect.IO
 import cats.effect.std.Random
 import io.github.iltotore.iron.*
-import nyetbot.Config
+import nyetbot.config.Config
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileDescription
 import nyetbot.model.UserRef

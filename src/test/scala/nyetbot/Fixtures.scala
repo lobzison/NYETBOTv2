@@ -1,6 +1,6 @@
 package nyetbot
 
-import nyetbot.Config.LlmConfig
+import nyetbot.config.Config.LlmConfig
 
 object Fixtures:
     val llmConfig: LlmConfig = LlmConfig(

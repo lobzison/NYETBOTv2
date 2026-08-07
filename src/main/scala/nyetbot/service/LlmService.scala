@@ -3,7 +3,7 @@ package nyetbot.service
 import cats.effect.IO
 import io.circe.Json
 import io.circe.literal.json
-import nyetbot.Config
+import nyetbot.config.Config
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserRef
 import nyetbot.util.Text

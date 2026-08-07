@@ -8,7 +8,7 @@ import cats.effect.*
 import cats.effect.std.Mutex
 import cats.effect.std.Random
 import cats.syntax.all.*
-import nyetbot.Config.LlmConfig
+import nyetbot.config.Config.LlmConfig
 import nyetbot.model.*
 import nyetbot.service.*
 

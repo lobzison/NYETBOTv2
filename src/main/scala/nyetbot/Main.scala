@@ -11,6 +11,7 @@ import fly4s.*
 import nyetbot.functionality.*
 import nyetbot.repo.*
 import nyetbot.service.{HeartbeatService, *}
+import nyetbot.config.Config
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.Client
 import org.typelevel.otel4s.metrics.Meter
