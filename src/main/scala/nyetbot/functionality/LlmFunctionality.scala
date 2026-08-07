@@ -8,7 +8,7 @@ import cats.effect.*
 import cats.effect.std.Mutex
 import cats.effect.std.Random
 import cats.syntax.all.*
-import nyetbot.Config.LlmConfig
+import nyetbot.config.LlmConfig
 import nyetbot.model.*
 import nyetbot.service.*
 
@@ -57,7 +57,7 @@ class LlmFunctionalityImpl(
                 .surround(triggerReply(msg, tagged, replyToBot))
                 .handleErrorWith(e => IO.println(s"LLM reply failed: ${e.getMessage}"))
         for
-            roll <- Random[IO].betweenInt(0, config.llmMessageEvery)
+            roll <- Random[IO].betweenInt(0, config.messageEvery)
             _    <- if roll == 0 || tagged || replyToBot then fire else IO.unit
         yield ()
 
