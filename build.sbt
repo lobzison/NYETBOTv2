@@ -32,6 +32,7 @@ lazy val commonSettings = Seq(
     "org.http4s"            %% "http4s-circe"                              % "0.23.36",
     "org.typelevel"         %% "log4cats-slf4j"                            % "2.8.0",
     "com.github.pureconfig" %% "pureconfig-core"                           % "0.17.10",
+    "org.slf4j"              % "slf4j-simple"                              % "2.0.18",
     "org.scalameta"         %% "munit"                                     % "1.3.4"  % Test,
     "org.typelevel"         %% "munit-cats-effect"                         % "2.2.0"  % Test,
     "io.zonky.test"          % "embedded-postgres"                         % "2.2.2"  % Test,

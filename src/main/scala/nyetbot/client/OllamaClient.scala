@@ -19,13 +19,22 @@ object OllamaClient:
     case class Req(
         model: String,
         system: Option[String],
+        template: Option[String],
         prompt: String,
         stream: Boolean,
         think: Boolean,
         options: Req.Options
     )
     object Req:
-        case class Options(numPredict: Int, temperature: Double, numCtx: Int)
+        case class Options(
+            numPredict: Int,
+            temperature: Double,
+            topP: Double,
+            topK: Int,
+            repeatPenalty: Double,
+            numCtx: Int,
+            stop: List[String]
+        )
 
         given Encoder[Options] = ConfiguredEncoder.derived
         given Encoder[Req]     = ConfiguredEncoder.derived
@@ -35,7 +44,9 @@ object OllamaClient:
         new OllamaClient:
             def generate(req: Req): IO[String] =
                 val request =
-                    Request[IO](method = POST).withUri(generateUri).withEntity(req.asJson.deepDropNullValues)
+                    Request[IO](method = POST)
+                        .withUri(generateUri)
+                        .withEntity(req.asJson.deepDropNullValues)
                 client
                     .run(request)
                     .use { res =>

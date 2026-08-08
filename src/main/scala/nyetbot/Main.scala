@@ -8,13 +8,16 @@ import cats.effect.IOApp
 import cats.effect.kernel.*
 import cats.effect.std.Random
 import fly4s.*
+import nyetbot.client.OllamaClient
 import nyetbot.functionality.*
 import nyetbot.repo.*
 import nyetbot.service.{HeartbeatService, *}
 import nyetbot.service.llm.*
+import nyetbot.service.llm.feature.*
 import nyetbot.config.Config
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.Client
+import org.http4s.Uri
 import org.typelevel.otel4s.metrics.Meter
 import org.typelevel.otel4s.trace.Tracer
 import skunk.Session
@@ -62,8 +65,10 @@ object Main extends IOApp.Simple:
             service          <- MemeServiceCached(memeRepo)
             meme              = MemeFunctionalityImpl(service)
             profileRepo       = ProfileRepoDB(db)
+            ollamaClient      = OllamaClient(client, Uri.unsafeFromString(config.ollamaConfig.uri))
+            replyFeature      = ReplyFeature(ollamaClient, config.ollamaConfig.reply, config.llmConfig)
             ollamaService     =
-                OllamaService(client, config.ollamaConfig, config.llmConfig)
+                OllamaService(client, config.ollamaConfig, config.llmConfig, replyFeature)
             profileService    = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
             llm              <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
             mediaRelay        = MediaRelayFunctionalityImpl(MediaRelayServiceImpl())

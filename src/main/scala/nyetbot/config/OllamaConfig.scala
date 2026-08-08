@@ -4,18 +4,14 @@ import pureconfig.ConfigReader
 final case class OllamaConfig(
     domain: String,
     port: Int,
-    replyModel: String,
+    reply: ReplyFeatureConfig,
     utilityModel: String,
-    replyTemperature: Double,
     utilityTemperature: Double,
-    replyNumPredict: Int,
     summaryNumPredict: Int,
     rewriteNumPredict: Int,
     intentNumPredict: Int,
     topicNumPredict: Int,
     registerNumPredict: Int,
-    numCtx: Int,
-    think: Boolean,
     requestTimeoutMinutes: Int,
     idleTimeoutMinutes: Int
 ) derives ConfigReader:
