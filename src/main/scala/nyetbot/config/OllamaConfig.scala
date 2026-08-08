@@ -8,9 +8,7 @@ final case class OllamaConfig(
     summarizeThread: SummarizeThreadFeatureConfig,
     classifyIntent: ClassifyIntentFeatureConfig,
     summarizeUser: SummarizeUserFeatureConfig,
-    utilityModel: String,
-    utilityTemperature: Double,
-    registerNumPredict: Int,
+    classifyRegister: ClassifyRegisterFeatureConfig,
     requestTimeoutMinutes: Int,
     idleTimeoutMinutes: Int
 ) derives ConfigReader:
