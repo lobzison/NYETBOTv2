@@ -99,7 +99,8 @@ object Main extends IOApp.Simple:
                   summarizeUserFeature,
                   classifyRegisterFeature
                 )
-            profileService          = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
+            profileService          =
+                ProfileServiceImpl(profileRepo, ollamaService, config.profileServiceConfig)
             llm                    <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
             mediaRelay              = MediaRelayFunctionalityImpl(MediaRelayServiceImpl())
             _                      <- IO.println("Ready")

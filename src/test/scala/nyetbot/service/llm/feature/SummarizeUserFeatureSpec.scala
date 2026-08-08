@@ -29,7 +29,9 @@ class SummarizeUserFeatureSpec extends CatsEffectSuite:
         numPredict = Some(200),
         numCtx = Some(8192),
         think = Some(false)
-      )
+      ),
+      profileMaxChars = 300,
+      summaryMaxChars = 500
     )
 
     private val who  = UserRef(UserId(42L), DisplayName("Гоша Петров"))

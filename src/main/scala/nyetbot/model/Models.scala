@@ -16,7 +16,7 @@ import io.circe.generic.auto.*
 import io.circe.syntax.*
 import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.all.*
-import nyetbot.config.LlmConfig
+import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.util.Text
 import skunk.*
 import skunk.circe.codec.json.json
@@ -165,7 +165,7 @@ case class SwearGroup(totalWeight: Int, swears: List[SwearRow])
 final case class LlmContextMessage(userId: Option[UserId], userName: String, text: String)
 
 object LlmContextMessage:
-    def fromTextMessage(t: TextMessage, config: LlmConfig): LlmContextMessage =
+    def fromTextMessage(t: TextMessage, config: LlmFunctionalityConfig): LlmContextMessage =
         val user = t.from
             .map(u => s"${config.userPrefix}${u.firstName}_${u.lastName.getOrElse("")}")
             .getOrElse("user")

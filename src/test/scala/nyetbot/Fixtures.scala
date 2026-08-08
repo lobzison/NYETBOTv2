@@ -1,10 +1,10 @@
 package nyetbot
 
-import nyetbot.config.LlmConfig
-import nyetbot.config.ReplyConfig
+import nyetbot.config.LlmFunctionalityConfig
+import nyetbot.config.ProfileServiceConfig
 
 object Fixtures:
-    val llmConfig: LlmConfig = LlmConfig(
+    val llmConfig: LlmFunctionalityConfig = LlmFunctionalityConfig(
       botName = "NYETBOT",
       botAlias = "@nyetterbot",
       userPrefix = "",
@@ -12,14 +12,13 @@ object Fixtures:
       messageEvery = 150,
       chatBufferSize = 200,
       replyContextWindow = 20,
+      recentUserMessages = 50
+    )
+
+    val profileServiceConfig: ProfileServiceConfig = ProfileServiceConfig(
       topicContextWindow = 10,
-      recentUserMessages = 50,
-      profileMaxChars = 300,
-      summaryMaxChars = 500,
-      reply = ReplyConfig(
-        minChars = 150,
-        meanFactor = 1.5,
-        spread = 0.3,
-        maxChars = 600
-      )
+      minChars = 150,
+      meanFactor = 1.5,
+      spread = 0.3,
+      maxChars = 600
     )

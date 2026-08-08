@@ -147,7 +147,7 @@ class OllamaPromptsSpec extends FunSuite:
     }
 
     test("summary prompt carries the char limit and ends with the cue label") {
-        val p = OllamaPrompts.summary(chat, who, cfg)
+        val p = OllamaPrompts.summary(chat, who, cfg, 500)
         assert(p.contains("500"))
         assert(p.endsWith("СВОДКА:"))
     }
@@ -179,7 +179,7 @@ class OllamaPromptsSpec extends FunSuite:
     }
 
     test("rewrite prompt carries the profile char limit and ends with the cue label") {
-        val p = OllamaPrompts.rewrite("старое", "новое", who, cfg)
+        val p = OllamaPrompts.rewrite("старое", "новое", who, 300)
         assert(p.contains("300"))
         assert(p.endsWith("ОБНОВЛЁННОЕ ДОСЬЕ:"))
     }

@@ -2,7 +2,7 @@ package nyetbot.service.llm.feature
 
 import cats.effect.IO
 import nyetbot.client.OllamaClient
-import nyetbot.config.LlmConfig
+import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.ReplyFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.service.llm.{Register, ReplyContext, TagIntent}
@@ -14,14 +14,14 @@ object ReplyFeature:
     def apply(
         client: OllamaClient,
         config: ReplyFeatureConfig,
-        llmConfig: LlmConfig
+        llmConfig: LlmFunctionalityConfig
     ): ReplyFeature =
         new ReplyFeatureImpl(client, config, llmConfig)
 
 class ReplyFeatureImpl(
     client: OllamaClient,
     config: ReplyFeatureConfig,
-    llmConfig: LlmConfig
+    llmConfig: LlmFunctionalityConfig
 ) extends ReplyFeature:
     private val request = OllamaClient.Req.from(config.modelConfig)
 
@@ -29,7 +29,7 @@ class ReplyFeatureImpl(
         client.generate(request.copy(prompt = ReplyFeaturePrompt.render(ctx, llmConfig)))
 
 object ReplyFeaturePrompt:
-    private def renderChat(chat: List[LlmContextMessage], cfg: LlmConfig): String =
+    private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
         chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
 
     private def registerLine(register: Register): String = register match
@@ -45,7 +45,7 @@ object ReplyFeaturePrompt:
         case Register.Byt     =>
             "Это бытовая болтовня: вбрось свой тейк по теме как участник, без наезда на человека."
 
-    def render(ctx: ReplyContext, cfg: LlmConfig): String =
+    def render(ctx: ReplyContext, cfg: LlmFunctionalityConfig): String =
         val intentLine          = ctx.intent match
             case TagIntent.Contextual  =>
                 "Тебя дёрнули внутри уже идущего спора — отвечай в контексте нити."

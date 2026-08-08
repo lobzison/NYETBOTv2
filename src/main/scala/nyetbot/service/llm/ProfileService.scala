@@ -4,7 +4,7 @@ import cats.effect.Clock
 import cats.effect.IO
 import cats.effect.std.Random
 import io.github.iltotore.iron.*
-import nyetbot.config.LlmConfig
+import nyetbot.config.ProfileServiceConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileDescription
 import nyetbot.model.UserRef
@@ -31,7 +31,7 @@ trait ProfileService:
 
     def rewriteProfile(target: UserRef, gen: GeneratedReply): IO[Unit]
 
-class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: LlmConfig)(using
+class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: ProfileServiceConfig)(using
     Random[IO]
 ) extends ProfileService:
 
@@ -96,8 +96,8 @@ class ProfileServiceImpl(repo: ProfileRepo, llm: LlmService, config: LlmConfig)(
         Clock[IO].realTimeInstant.map(_.atZone(ZoneId.systemDefault()).format(currentDateFormatter))
 
     private def targetMinChars(triggerText: String): IO[Int] =
-        val base = if triggerText.nonEmpty then triggerText.length else config.reply.minChars
-        Random[IO].betweenDouble(-config.reply.spread, config.reply.spread).map { jitter =>
-            val target = (config.reply.meanFactor * base * (1.0 + jitter)).toInt
-            target.max(config.reply.minChars).min(config.reply.maxChars)
+        val base = if triggerText.nonEmpty then triggerText.length else config.minChars
+        Random[IO].betweenDouble(-config.spread, config.spread).map { jitter =>
+            val target = (config.meanFactor * base * (1.0 + jitter)).toInt
+            target.max(config.minChars).min(config.maxChars)
         }

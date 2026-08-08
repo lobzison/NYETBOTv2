@@ -1,7 +1,7 @@
 package nyetbot.service.llm
 
 import cats.effect.IO
-import nyetbot.config.LlmConfig
+import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserRef
 import nyetbot.service.llm.feature.{
@@ -59,30 +59,40 @@ trait LlmService:
     ): IO[Register]
 
 object OllamaPrompts:
-    def reply(ctx: ReplyContext, cfg: LlmConfig): String =
+    def reply(ctx: ReplyContext, cfg: LlmFunctionalityConfig): String =
         ReplyFeaturePrompt.render(ctx, cfg)
 
-    def summary(recent: List[LlmContextMessage], who: UserRef, cfg: LlmConfig): String =
-        SummarizeUserFeaturePrompt.summary(recent, who, cfg)
+    def summary(
+        recent: List[LlmContextMessage],
+        who: UserRef,
+        cfg: LlmFunctionalityConfig,
+        summaryMaxChars: Int
+    ): String =
+        SummarizeUserFeaturePrompt.summary(recent, who, cfg, summaryMaxChars)
 
-    def topic(recentChat: List[LlmContextMessage], cfg: LlmConfig): String =
+    def topic(recentChat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
         SummarizeThreadFeaturePrompt.render(recentChat, cfg)
 
     def register(
         triggerText: String,
         recentChat: List[LlmContextMessage],
-        cfg: LlmConfig
+        cfg: LlmFunctionalityConfig
     ): String =
         ClassifyRegisterFeaturePrompt.render(triggerText, recentChat, cfg)
 
-    def rewrite(oldProfile: String, summary: String, who: UserRef, cfg: LlmConfig): String =
-        SummarizeUserFeaturePrompt.rewrite(oldProfile, summary, who, cfg)
+    def rewrite(
+        oldProfile: String,
+        summary: String,
+        who: UserRef,
+        profileMaxChars: Int
+    ): String =
+        SummarizeUserFeaturePrompt.rewrite(oldProfile, summary, who, profileMaxChars)
 
     def intent(
         question: String,
         replyToText: String,
         recentChat: List[LlmContextMessage],
-        cfg: LlmConfig
+        cfg: LlmFunctionalityConfig
     ): String =
         ClassifyIntentFeaturePrompt.render(question, replyToText, recentChat, cfg)
 

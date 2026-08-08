@@ -1,7 +1,8 @@
 package nyetbot.config
+
 import pureconfig.ConfigReader
 
-final case class LlmConfig(
+final case class LlmFunctionalityConfig(
     botName: String,
     botAlias: String,
     userPrefix: String,
@@ -9,9 +10,5 @@ final case class LlmConfig(
     messageEvery: Int,
     chatBufferSize: Int,
     replyContextWindow: Int,
-    topicContextWindow: Int,
-    recentUserMessages: Int,
-    profileMaxChars: Int,
-    summaryMaxChars: Int,
-    reply: ReplyConfig
+    recentUserMessages: Int
 ) derives ConfigReader

@@ -54,7 +54,7 @@ class ProfileServiceSpec extends CatsEffectSuite:
     private def mkService(repo: ProfileRepoInMemory, llm: LlmService): IO[ProfileServiceImpl] =
         Random
             .scalaUtilRandom[IO]
-            .map(r => ProfileServiceImpl(repo, llm, Fixtures.llmConfig)(using r))
+            .map(r => ProfileServiceImpl(repo, llm, Fixtures.profileServiceConfig)(using r))
 
     test(
       "random trigger skips intent classification but enriches the reply with topic and register"

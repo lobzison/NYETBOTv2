@@ -4,5 +4,7 @@ import pureconfig.ConfigReader
 
 final case class SummarizeUserFeatureConfig(
     modelConfig: OllamaModelConfig,
-    rewriteModelConfig: OllamaModelConfig
+    rewriteModelConfig: OllamaModelConfig,
+    profileMaxChars: Int,
+    summaryMaxChars: Int
 ) extends FeatureConfig derives ConfigReader

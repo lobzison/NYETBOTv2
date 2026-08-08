@@ -2,7 +2,7 @@ package nyetbot.service.llm.feature
 
 import cats.effect.IO
 import nyetbot.client.OllamaClient
-import nyetbot.config.LlmConfig
+import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.ClassifyIntentFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.service.llm.TagIntent
@@ -18,14 +18,14 @@ object ClassifyIntentFeature:
     def apply(
         client: OllamaClient,
         config: ClassifyIntentFeatureConfig,
-        llmConfig: LlmConfig
+        llmConfig: LlmFunctionalityConfig
     ): ClassifyIntentFeature =
         new ClassifyIntentFeatureImpl(client, config, llmConfig)
 
 class ClassifyIntentFeatureImpl(
     client: OllamaClient,
     config: ClassifyIntentFeatureConfig,
-    llmConfig: LlmConfig
+    llmConfig: LlmFunctionalityConfig
 ) extends ClassifyIntentFeature:
     private val request = OllamaClient.Req.from(config.modelConfig)
 
@@ -51,14 +51,14 @@ class ClassifyIntentFeatureImpl(
             }
 
 object ClassifyIntentFeaturePrompt:
-    private def renderChat(chat: List[LlmContextMessage], cfg: LlmConfig): String =
+    private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
         chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
 
     def render(
         question: String,
         replyToText: String,
         recentChat: List[LlmContextMessage],
-        cfg: LlmConfig
+        cfg: LlmFunctionalityConfig
     ): String =
         val repliedTo = if replyToText.isEmpty then "нет" else replyToText
         s"""Определи, к чему относится обращение к боту.

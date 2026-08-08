@@ -8,7 +8,7 @@ import cats.effect.*
 import cats.effect.std.Mutex
 import cats.effect.std.Random
 import cats.syntax.all.*
-import nyetbot.config.LlmConfig
+import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.model.*
 import nyetbot.service.*
 import nyetbot.service.llm.*
@@ -23,7 +23,7 @@ class LlmFunctionalityImpl(
     contextRef: Ref[IO, Vector[LlmContextMessage]],
     userHistoryRef: Ref[IO, Map[UserId, Vector[LlmContextMessage]]],
     mutex: Mutex[IO],
-    config: LlmConfig
+    config: LlmFunctionalityConfig
 )(using TelegramClient[IO], Random[IO])
     extends LlmFunctionality:
 
@@ -119,7 +119,7 @@ class LlmFunctionalityImpl(
         yield ()
 
 object LlmFunctionalityImpl:
-    def mk(profileService: ProfileService, config: LlmConfig)(using
+    def mk(profileService: ProfileService, config: LlmFunctionalityConfig)(using
         TelegramClient[IO],
         Random[IO]
     ): IO[LlmFunctionalityImpl] =
