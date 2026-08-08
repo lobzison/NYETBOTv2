@@ -73,13 +73,27 @@ object Main extends IOApp.Simple:
                   config.ollamaConfig.summarizeThread,
                   config.llmConfig
                 )
+            classifyIntentFeature  =
+                ClassifyIntentFeature(
+                  ollamaClient,
+                  config.ollamaConfig.classifyIntent,
+                  config.llmConfig
+                )
+            summarizeUserFeature   =
+                SummarizeUserFeature(
+                  ollamaClient,
+                  config.ollamaConfig.summarizeUser,
+                  config.llmConfig
+                )
             ollamaService          =
                 OllamaService(
                   client,
                   config.ollamaConfig,
                   config.llmConfig,
                   replyFeature,
-                  summarizeThreadFeature
+                  summarizeThreadFeature,
+                  classifyIntentFeature,
+                  summarizeUserFeature
                 )
             profileService         = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
             llm                   <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)

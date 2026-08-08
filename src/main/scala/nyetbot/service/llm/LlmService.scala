@@ -9,10 +9,13 @@ import nyetbot.model.UserRef
 import nyetbot.service.llm.feature.{
     ReplyFeature,
     ReplyFeaturePrompt,
+    ClassifyIntentFeature,
+    ClassifyIntentFeaturePrompt,
+    SummarizeUserFeature,
+    SummarizeUserFeaturePrompt,
     SummarizeThreadFeature,
     SummarizeThreadFeaturePrompt
 }
-import nyetbot.util.Text
 import org.http4s.Method.POST
 import org.http4s.Request
 import org.http4s.Uri
@@ -70,14 +73,7 @@ object OllamaPrompts:
         ReplyFeaturePrompt.render(ctx, cfg)
 
     def summary(recent: List[LlmContextMessage], who: UserRef, cfg: LlmConfig): String =
-        s"""Ниже последние сообщения пользователя ${who.displayName} из чата.
-Составь сжатую нейтральную сводку: о чём он пишет, какая позиция, манера, повторяющиеся темы.
-Только описание поведения, без ролей, без оценок, без обращений. Не больше ${cfg.summaryMaxChars} символов.
-
-СООБЩЕНИЯ:
-${renderChat(recent, cfg)}
-
-СВОДКА:"""
+        SummarizeUserFeaturePrompt.summary(recent, who, cfg)
 
     def topic(recentChat: List[LlmContextMessage], cfg: LlmConfig): String =
         SummarizeThreadFeaturePrompt.render(recentChat, cfg)
@@ -105,18 +101,7 @@ BYT — бытовая болтовня, статус, мелочь
 Ответ:"""
 
     def rewrite(oldProfile: String, summary: String, who: UserRef, cfg: LlmConfig): String =
-        val old = if oldProfile.isEmpty then "пусто" else oldProfile
-        s"""Есть старое досье на пользователя ${who.displayName} и свежая сводка его поведения.
-Слей их в одно обновлённое досье: сохрани важное из старого, добавь новое, выкинь устаревшее.
-Пиши в третьем лице, нейтрально, одним абзацем, строго не больше ${cfg.profileMaxChars} символов.
-
-СТАРОЕ ДОСЬЕ:
-$old
-
-СВЕЖАЯ СВОДКА:
-$summary
-
-ОБНОВЛЁННОЕ ДОСЬЕ:"""
+        SummarizeUserFeaturePrompt.rewrite(oldProfile, summary, who, cfg)
 
     def intent(
         question: String,
@@ -124,23 +109,16 @@ $summary
         recentChat: List[LlmContextMessage],
         cfg: LlmConfig
     ): String =
-        val repliedTo = if replyToText.isEmpty then "нет" else replyToText
-        s"""Определи, к чему относится обращение к боту.
-Сообщение с упоминанием бота: $question
-Сообщение, на которое это ответ (может быть пустым): $repliedTo
-Недавний контекст чата:
-${renderChat(recentChat, cfg)}
-
-Если это продолжение уже идущего обсуждения — ответь одним словом: CONTEXT.
-Если это новый отдельный вопрос — ответь одним словом: NEW.
-Ответ:"""
+        ClassifyIntentFeaturePrompt.render(question, replyToText, recentChat, cfg)
 
 class OllamaService(
     client: Client[IO],
     config: OllamaConfig,
     llmConfig: LlmConfig,
     replyFeature: ReplyFeature,
-    summarizeThreadFeature: SummarizeThreadFeature
+    summarizeThreadFeature: SummarizeThreadFeature,
+    classifyIntentFeature: ClassifyIntentFeature,
+    summarizeUserFeature: SummarizeUserFeature
 ) extends LlmService:
 
     private def complete(
@@ -168,12 +146,7 @@ class OllamaService(
         replyFeature.generateReply(ctx)
 
     override def summarizeUser(recent: List[LlmContextMessage], who: UserRef): IO[String] =
-        complete(
-          config.utilityModel,
-          OllamaPrompts.summary(recent, who, llmConfig),
-          config.summaryNumPredict,
-          config.utilityTemperature
-        ).map(Text.truncate(_, llmConfig.summaryMaxChars))
+        summarizeUserFeature.summarizeUser(recent, who)
 
     override def summarizeThread(recentChat: List[LlmContextMessage]): IO[String] =
         summarizeThreadFeature.summarizeThread(recentChat)
@@ -183,26 +156,14 @@ class OllamaService(
         recentSummary: String,
         who: UserRef
     ): IO[String] =
-        complete(
-          config.utilityModel,
-          OllamaPrompts.rewrite(oldProfile, recentSummary, who, llmConfig),
-          config.rewriteNumPredict,
-          config.utilityTemperature
-        ).map(Text.truncate(_, llmConfig.profileMaxChars))
+        summarizeUserFeature.rewriteProfile(oldProfile, recentSummary, who)
 
     override def classifyTagIntent(
         question: String,
         replyToText: String,
         recentChat: List[LlmContextMessage]
     ): IO[TagIntent] =
-        complete(
-          config.utilityModel,
-          OllamaPrompts.intent(question, replyToText, recentChat, llmConfig),
-          config.intentNumPredict,
-          config.utilityTemperature
-        ).map(r =>
-            if r.toUpperCase.contains("NEW") then TagIntent.NewQuestion else TagIntent.Contextual
-        )
+        classifyIntentFeature.classifyIntent(question, replyToText, recentChat)
 
     override def classifyRegister(
         triggerText: String,

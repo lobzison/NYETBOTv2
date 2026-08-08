@@ -6,11 +6,10 @@ final case class OllamaConfig(
     port: Int,
     reply: ReplyFeatureConfig,
     summarizeThread: SummarizeThreadFeatureConfig,
+    classifyIntent: ClassifyIntentFeatureConfig,
+    summarizeUser: SummarizeUserFeatureConfig,
     utilityModel: String,
     utilityTemperature: Double,
-    summaryNumPredict: Int,
-    rewriteNumPredict: Int,
-    intentNumPredict: Int,
     registerNumPredict: Int,
     requestTimeoutMinutes: Int,
     idleTimeoutMinutes: Int
