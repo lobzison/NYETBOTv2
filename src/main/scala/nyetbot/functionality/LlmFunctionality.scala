@@ -13,7 +13,7 @@ import nyetbot.model.*
 import nyetbot.model.ProfileModels.*
 import nyetbot.service.*
 import nyetbot.service.llm.*
-import nyetbot.service.llm.ProfileService.Trigger
+import nyetbot.service.llm.LlmService.Trigger
 
 import concurrent.duration.DurationInt
 
@@ -22,7 +22,7 @@ trait LlmFunctionality:
     def isReplyToBot(msg: TextMessage): Boolean
 
 object LlmFunctionality:
-    def apply(profileService: ProfileService, config: LlmFunctionalityConfig)(using
+    def apply(profileService: LlmService, config: LlmFunctionalityConfig)(using
         TelegramClient[IO],
         Random[IO]
     ): IO[LlmFunctionality] =

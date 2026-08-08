@@ -91,17 +91,17 @@ object Main extends IOApp.Simple:
                   config.ollamaConfig.classifyRegister,
                   config.llmConfig
                 )
-            ollamaService           =
-                LlmService(
+            llmFeatures             =
+                LlmFeatures(
                   replyFeature,
                   summarizeThreadFeature,
                   classifyIntentFeature,
                   summarizeUserFeature,
                   classifyRegisterFeature
                 )
-            profileService          =
-                ProfileService(profileRepo, ollamaService, config.profileServiceConfig)
-            llm                    <- LlmFunctionality(profileService, config.llmConfig)
+            llmService              =
+                LlmService(profileRepo, llmFeatures, config.profileServiceConfig)
+            llm                    <- LlmFunctionality(llmService, config.llmConfig)
             mediaRelay              = MediaRelayFunctionality(MediaRelayService())
             _                      <- IO.println("Ready")
         yield List(

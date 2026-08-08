@@ -9,12 +9,12 @@ import nyetbot.Fixtures
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
 import nyetbot.repo.ProfileRepoInMemory
-import nyetbot.service.llm.ProfileService.*
+import nyetbot.service.llm.LlmService.*
 import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
 import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
 import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
 
-class ProfileServiceSpec extends CatsEffectSuite:
+class LlmServiceSpec extends CatsEffectSuite:
 
     private class RecordingLlm(
         calls: Ref[IO, List[String]],
@@ -23,7 +23,7 @@ class ProfileServiceSpec extends CatsEffectSuite:
         threadInputs: Option[Ref[IO, List[List[LlmContextMessage]]]] = None,
         topicResult: Either[Throwable, String] = Right("суть обсуждения"),
         registerResult: Either[Throwable, Register] = Right(Register.Spor)
-    ) extends LlmService:
+    ) extends LlmFeatures:
         def generateReply(ctx: ReplyContext): IO[String]                                        =
             calls.update(_ :+ "generateReply").flatMap { _ =>
                 replyContexts match
@@ -53,10 +53,10 @@ class ProfileServiceSpec extends CatsEffectSuite:
     private val target = UserRef(UserId(42L), DisplayName("Гоша"))
     private val chat   = List(LlmContextMessage(Some(UserId(42L)), "Гоша", "казино хуже"))
 
-    private def mkService(repo: ProfileRepoInMemory, llm: LlmService): IO[ProfileService] =
+    private def mkService(repo: ProfileRepoInMemory, llm: LlmFeatures): IO[LlmService] =
         Random
             .scalaUtilRandom[IO]
-            .map(r => ProfileService(repo, llm, Fixtures.profileServiceConfig)(using r))
+            .map(r => LlmService(repo, llm, Fixtures.profileServiceConfig)(using r))
 
     test(
       "random trigger skips intent classification but enriches the reply with topic and register"

@@ -4,7 +4,7 @@ import munit.FunSuite
 import nyetbot.Fixtures
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
-import nyetbot.service.llm.LlmService.*
+import nyetbot.service.llm.LlmFeatures.*
 import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
 import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
 import nyetbot.service.llm.feature.ReplyFeature.ReplyContext

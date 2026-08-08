@@ -11,8 +11,8 @@ import munit.CatsEffectSuite
 import nyetbot.Fixtures
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
-import nyetbot.service.llm.ProfileService
-import nyetbot.service.llm.ProfileService.{GeneratedReply, Trigger}
+import nyetbot.service.llm.LlmService
+import nyetbot.service.llm.LlmService.{GeneratedReply, Trigger}
 
 class LlmFunctionalitySpec extends CatsEffectSuite:
 
@@ -20,7 +20,7 @@ class LlmFunctionalitySpec extends CatsEffectSuite:
         override def execute[Req, Res](request: Req)(implicit method: Method[Req, Res]): IO[Res] =
             IO.raiseError(new IllegalStateException("Telegram client must not be called"))
 
-    private val profileService = new ProfileService:
+    private val profileService = new LlmService:
         override def generateReply(
             target: UserRef,
             triggerText: String,
