@@ -6,7 +6,8 @@ import io.circe.syntax.*
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
-import nyetbot.config.ClassifyRegisterFeatureConfig
+import nyetbot.config.llm.feature.ClassifyRegisterFeatureConfig
+import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserId
 import nyetbot.service.llm.Register
@@ -14,11 +15,13 @@ import nyetbot.service.llm.Register
 class ClassifyRegisterFeatureSpec extends CatsEffectSuite:
 
     private val config = ClassifyRegisterFeatureConfig(
-      model = "register-model",
-      temperature = 0.2,
-      numPredict = 6,
-      numCtx = 8192,
-      think = false
+      modelConfig = OllamaModelConfig(
+        model = "register-model",
+        temperature = Some(0.2),
+        numPredict = Some(6),
+        numCtx = Some(8192),
+        think = Some(false)
+      )
     )
 
     private val chat = (1 to 10).toList.map(i =>
@@ -51,13 +54,13 @@ class ClassifyRegisterFeatureSpec extends CatsEffectSuite:
             assertEquals(req.system, None)
             assertEquals(req.template, None)
             assertEquals(req.stream, false)
-            assertEquals(req.think, false)
-            assertEquals(req.options.numPredict, 6)
-            assertEquals(req.options.temperature, 0.2)
+            assertEquals(req.think, Some(false))
+            assertEquals(req.options.numPredict, Some(6))
+            assertEquals(req.options.temperature, Some(0.2))
             assertEquals(req.options.topP, None)
             assertEquals(req.options.topK, None)
             assertEquals(req.options.repeatPenalty, None)
-            assertEquals(req.options.numCtx, 8192)
+            assertEquals(req.options.numCtx, Some(8192))
             assertEquals(req.options.stop, None)
             assert(req.prompt.contains("уникальный-триггер"))
             assert(!req.prompt.contains("User1: message-1"))

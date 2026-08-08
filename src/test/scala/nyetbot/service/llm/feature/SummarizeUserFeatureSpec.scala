@@ -6,7 +6,8 @@ import io.circe.syntax.*
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
-import nyetbot.config.SummarizeUserFeatureConfig
+import nyetbot.config.llm.feature.OllamaModelConfig
+import nyetbot.config.llm.feature.SummarizeUserFeatureConfig
 import nyetbot.model.DisplayName
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserId
@@ -15,12 +16,20 @@ import nyetbot.model.UserRef
 class SummarizeUserFeatureSpec extends CatsEffectSuite:
 
     private val config = SummarizeUserFeatureConfig(
-      model = "user-model",
-      temperature = 0.2,
-      summaryNumPredict = 256,
-      rewriteNumPredict = 200,
-      numCtx = 8192,
-      think = false
+      modelConfig = OllamaModelConfig(
+        model = "user-model",
+        temperature = Some(0.2),
+        numPredict = Some(256),
+        numCtx = Some(8192),
+        think = Some(false)
+      ),
+      rewriteModelConfig = OllamaModelConfig(
+        model = "user-model",
+        temperature = Some(0.2),
+        numPredict = Some(200),
+        numCtx = Some(8192),
+        think = Some(false)
+      )
     )
 
     private val who  = UserRef(UserId(42L), DisplayName("Гоша Петров"))
@@ -58,11 +67,11 @@ class SummarizeUserFeatureSpec extends CatsEffectSuite:
             val summaryRequest = captured.head
             val rewriteRequest = captured(1)
             assertEquals(summaryRequest.model, "user-model")
-            assertEquals(summaryRequest.options.numPredict, 256)
-            assertEquals(rewriteRequest.options.numPredict, 200)
-            assertEquals(summaryRequest.options.temperature, 0.2)
-            assertEquals(summaryRequest.options.numCtx, 8192)
-            assertEquals(summaryRequest.think, false)
+            assertEquals(summaryRequest.options.numPredict, Some(256))
+            assertEquals(rewriteRequest.options.numPredict, Some(200))
+            assertEquals(summaryRequest.options.temperature, Some(0.2))
+            assertEquals(summaryRequest.options.numCtx, Some(8192))
+            assertEquals(summaryRequest.think, Some(false))
             assertEquals(summaryRequest.options.topP, None)
             assertEquals(summaryRequest.options.topK, None)
             assertEquals(summaryRequest.options.repeatPenalty, None)

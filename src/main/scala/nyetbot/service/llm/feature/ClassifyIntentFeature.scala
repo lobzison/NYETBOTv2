@@ -2,7 +2,8 @@ package nyetbot.service.llm.feature
 
 import cats.effect.IO
 import nyetbot.client.OllamaClient
-import nyetbot.config.{ClassifyIntentFeatureConfig, LlmConfig}
+import nyetbot.config.LlmConfig
+import nyetbot.config.llm.feature.ClassifyIntentFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.service.llm.TagIntent
 
@@ -27,20 +28,20 @@ class ClassifyIntentFeatureImpl(
     llmConfig: LlmConfig
 ) extends ClassifyIntentFeature:
     private val request = OllamaClient.Req(
-      model = config.model,
+      model = config.modelConfig.model,
       system = None,
       template = None,
       prompt = "",
       stream = false,
-      think = config.think,
+      think = config.modelConfig.think,
       options = OllamaClient.Req.Options(
-        numPredict = config.numPredict,
-        temperature = config.temperature,
-        topP = None,
-        topK = None,
-        repeatPenalty = None,
-        numCtx = config.numCtx,
-        stop = None
+        numPredict = config.modelConfig.numPredict,
+        temperature = config.modelConfig.temperature,
+        topP = config.modelConfig.topP,
+        topK = config.modelConfig.topK,
+        repeatPenalty = config.modelConfig.repeatPenalty,
+        numCtx = config.modelConfig.numCtx,
+        stop = config.modelConfig.stop
       )
     )
 

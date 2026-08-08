@@ -6,18 +6,21 @@ import io.circe.syntax.*
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
-import nyetbot.config.SummarizeThreadFeatureConfig
+import nyetbot.config.llm.feature.OllamaModelConfig
+import nyetbot.config.llm.feature.SummarizeThreadFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserId
 
 class SummarizeThreadFeatureSpec extends CatsEffectSuite:
 
     private val config = SummarizeThreadFeatureConfig(
-      model = "summary-model",
-      temperature = 0.2,
-      numPredict = 160,
-      numCtx = 8192,
-      think = false
+      modelConfig = OllamaModelConfig(
+        model = "summary-model",
+        temperature = Some(0.2),
+        numPredict = Some(160),
+        numCtx = Some(8192),
+        think = Some(false)
+      )
     )
 
     private val chat = List(
@@ -44,13 +47,13 @@ class SummarizeThreadFeatureSpec extends CatsEffectSuite:
             assertEquals(req.system, None)
             assertEquals(req.template, None)
             assertEquals(req.stream, false)
-            assertEquals(req.think, false)
-            assertEquals(req.options.numPredict, 160)
-            assertEquals(req.options.temperature, 0.2)
+            assertEquals(req.think, Some(false))
+            assertEquals(req.options.numPredict, Some(160))
+            assertEquals(req.options.temperature, Some(0.2))
             assertEquals(req.options.topP, None)
             assertEquals(req.options.topK, None)
             assertEquals(req.options.repeatPenalty, None)
-            assertEquals(req.options.numCtx, 8192)
+            assertEquals(req.options.numCtx, Some(8192))
             assertEquals(req.options.stop, None)
             assert(req.prompt.contains("Seb: банки говно"))
             assert(req.prompt.contains("Гоша: казино хуже"))

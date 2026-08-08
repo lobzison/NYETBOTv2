@@ -2,7 +2,8 @@ package nyetbot.service.llm.feature
 
 import cats.effect.IO
 import nyetbot.client.OllamaClient
-import nyetbot.config.{LlmConfig, ReplyFeatureConfig}
+import nyetbot.config.LlmConfig
+import nyetbot.config.llm.feature.ReplyFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.service.llm.{Register, ReplyContext, TagIntent}
 
@@ -23,20 +24,20 @@ class ReplyFeatureImpl(
     llmConfig: LlmConfig
 ) extends ReplyFeature:
     private val request = OllamaClient.Req(
-      model = config.model,
-      system = Some(config.system),
-      template = Some(config.template),
+      model = config.modelConfig.model,
+      system = config.modelConfig.system,
+      template = config.modelConfig.template,
       prompt = "",
       stream = false,
-      think = config.think,
+      think = config.modelConfig.think,
       options = OllamaClient.Req.Options(
-        numPredict = config.numPredict,
-        temperature = config.temperature,
-        topP = Some(config.topP),
-        topK = Some(config.topK),
-        repeatPenalty = Some(config.repeatPenalty),
-        numCtx = config.numCtx,
-        stop = Some(config.stop)
+        numPredict = config.modelConfig.numPredict,
+        temperature = config.modelConfig.temperature,
+        topP = config.modelConfig.topP,
+        topK = config.modelConfig.topK,
+        repeatPenalty = config.modelConfig.repeatPenalty,
+        numCtx = config.modelConfig.numCtx,
+        stop = config.modelConfig.stop
       )
     )
 

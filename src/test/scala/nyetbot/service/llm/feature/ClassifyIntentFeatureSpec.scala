@@ -6,7 +6,8 @@ import io.circe.syntax.*
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
-import nyetbot.config.ClassifyIntentFeatureConfig
+import nyetbot.config.llm.feature.ClassifyIntentFeatureConfig
+import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserId
 import nyetbot.service.llm.TagIntent
@@ -14,11 +15,13 @@ import nyetbot.service.llm.TagIntent
 class ClassifyIntentFeatureSpec extends CatsEffectSuite:
 
     private val config = ClassifyIntentFeatureConfig(
-      model = "intent-model",
-      temperature = 0.2,
-      numPredict = 4,
-      numCtx = 8192,
-      think = false
+      modelConfig = OllamaModelConfig(
+        model = "intent-model",
+        temperature = Some(0.2),
+        numPredict = Some(4),
+        numCtx = Some(8192),
+        think = Some(false)
+      )
     )
 
     private val chat = List(
@@ -52,13 +55,13 @@ class ClassifyIntentFeatureSpec extends CatsEffectSuite:
             assertEquals(req.system, None)
             assertEquals(req.template, None)
             assertEquals(req.stream, false)
-            assertEquals(req.think, false)
-            assertEquals(req.options.numPredict, 4)
-            assertEquals(req.options.temperature, 0.2)
+            assertEquals(req.think, Some(false))
+            assertEquals(req.options.numPredict, Some(4))
+            assertEquals(req.options.temperature, Some(0.2))
             assertEquals(req.options.topP, None)
             assertEquals(req.options.topK, None)
             assertEquals(req.options.repeatPenalty, None)
-            assertEquals(req.options.numCtx, 8192)
+            assertEquals(req.options.numCtx, Some(8192))
             assertEquals(req.options.stop, None)
             assert(req.prompt.contains("эй бот, что с банками?"))
             assert(req.prompt.contains("может быть пустым): нет"))

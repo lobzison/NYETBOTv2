@@ -1,4 +1,6 @@
 package nyetbot.config
+
+import nyetbot.config.llm.feature.*
 import pureconfig.ConfigReader
 
 final case class OllamaConfig(

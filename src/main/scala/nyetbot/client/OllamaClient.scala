@@ -22,17 +22,17 @@ object OllamaClient:
         template: Option[String],
         prompt: String,
         stream: Boolean,
-        think: Boolean,
+        think: Option[Boolean],
         options: Req.Options
     )
     object Req:
         case class Options(
-            numPredict: Int,
-            temperature: Double,
+            numPredict: Option[Int],
+            temperature: Option[Double],
             topP: Option[Double],
             topK: Option[Int],
             repeatPenalty: Option[Double],
-            numCtx: Int,
+            numCtx: Option[Int],
             stop: Option[List[String]]
         )
 

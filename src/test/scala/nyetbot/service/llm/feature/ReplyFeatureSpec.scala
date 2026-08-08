@@ -6,7 +6,8 @@ import io.circe.syntax.*
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
-import nyetbot.config.ReplyFeatureConfig
+import nyetbot.config.llm.feature.OllamaModelConfig
+import nyetbot.config.llm.feature.ReplyFeatureConfig
 import nyetbot.model.DisplayName
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserId
@@ -18,17 +19,19 @@ import nyetbot.service.llm.TagIntent
 class ReplyFeatureSpec extends CatsEffectSuite:
 
     private val config = ReplyFeatureConfig(
-      model = "reply-model",
-      system = "system prompt",
-      template = "template",
-      stop = List("stop", "another stop"),
-      temperature = 0.85,
-      topP = 0.95,
-      topK = 40,
-      repeatPenalty = 1.1,
-      numPredict = 512,
-      numCtx = 8192,
-      think = false
+      modelConfig = OllamaModelConfig(
+        model = "reply-model",
+        system = Some("system prompt"),
+        template = Some("template"),
+        temperature = Some(0.85),
+        numPredict = Some(512),
+        numCtx = Some(8192),
+        think = Some(false),
+        topP = Some(0.95),
+        topK = Some(40),
+        repeatPenalty = Some(1.1),
+        stop = Some(List("stop", "another stop"))
+      )
     )
 
     private val context = ReplyContext(
@@ -64,13 +67,13 @@ class ReplyFeatureSpec extends CatsEffectSuite:
             assertEquals(req.system, Some("system prompt"))
             assertEquals(req.template, Some("template"))
             assertEquals(req.stream, false)
-            assertEquals(req.think, false)
-            assertEquals(req.options.numPredict, 512)
-            assertEquals(req.options.temperature, 0.85)
+            assertEquals(req.think, Some(false))
+            assertEquals(req.options.numPredict, Some(512))
+            assertEquals(req.options.temperature, Some(0.85))
             assertEquals(req.options.topP, Some(0.95))
             assertEquals(req.options.topK, Some(40))
             assertEquals(req.options.repeatPenalty, Some(1.1))
-            assertEquals(req.options.numCtx, 8192)
+            assertEquals(req.options.numCtx, Some(8192))
             assertEquals(req.options.stop, Some(List("stop", "another stop")))
             assert(req.prompt.contains("триггер"))
             val json = req.asJson
