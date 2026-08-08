@@ -50,10 +50,6 @@ Domain values are **typed, never raw primitives**. Two complementary techniques 
   Construct through the companion: `X.either(v)` for runtime input that can fail, `X(v)` for
   known-valid literals.
 
-  // This is BS, I should mirate to refined, it allows newtypes
-- **Opaque-type newtypes** (plain Scala 3) wrap identifiers so they can't be transposed:
-  `MemeId`, `SwearId`, `UserId`, `SwearGroupId`, `DisplayName`, `MemeTrigger`.
-
 When adding a domain value, use one of these over a bare `Int`/`String`/`Long`
 
 ## Configuration

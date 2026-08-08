@@ -15,6 +15,7 @@ import io.circe.Json
 import io.circe.generic.auto.*
 import io.circe.syntax.*
 import io.github.iltotore.iron.*
+import io.github.iltotore.iron.constraint.any.Pure
 import io.github.iltotore.iron.constraint.all.*
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.util.Text
@@ -25,15 +26,11 @@ import skunk.codec.all.*
 import java.time.OffsetDateTime
 import scala.util.matching.Regex
 
-opaque type MemeId = Int
-object MemeId:
-    inline def apply(id: Int): MemeId           = id
-    extension (x: MemeId) inline def value: Int = x
+type MemeId = MemeId.T
+object MemeId extends RefinedType[Int, Pure]
 
-opaque type SwearId = Int
-object SwearId:
-    inline def apply(id: Int): SwearId           = id
-    extension (x: SwearId) inline def value: Int = x
+type SwearId = SwearId.T
+object SwearId extends RefinedType[Int, Pure]
 
 type Swear = Swear.T
 object Swear extends RefinedType[String, Not[Empty]]
@@ -49,36 +46,28 @@ object ProfileDescription extends RefinedType[String, MaxLength[300]]:
     def truncate(s: String): ProfileDescription =
         either(Text.truncate(s, 300)).getOrElse(ProfileDescription(""))
 
-opaque type UserId = Long
-object UserId:
-    inline def apply(id: Long): UserId           = id
-    extension (x: UserId) inline def value: Long = x
+type UserId = UserId.T
+object UserId extends RefinedType[Long, Pure]
 
-opaque type DisplayName = String
-object DisplayName:
-    inline def apply(s: String): DisplayName            = s
-    extension (x: DisplayName) inline def value: String = x
+type DisplayName = DisplayName.T
+object DisplayName extends RefinedType[String, Pure]
 
-opaque type SwearGroupId = Int
-object SwearGroupId:
-    inline def apply(id: Int): SwearGroupId           = id
-    extension (x: SwearGroupId) inline def value: Int = x
+type SwearGroupId = SwearGroupId.T
+object SwearGroupId extends RefinedType[Int, Pure]
 
-opaque type MemeTrigger = Regex
-object MemeTrigger:
-    inline def apply(s: Regex): MemeTrigger = s
+type MemeTrigger = MemeTrigger.T
+object MemeTrigger extends RefinedType[Regex, Pure]:
     extension (x: MemeTrigger)
-        inline def value: Regex                                   = x
         inline def toMemeTriggerUserSyntax: MemeTriggerUserSyntax =
-            MemeTriggerUserSyntax(x.toString.replaceAll(raw"\.\*", "%").replaceAll(raw"\.", "_"))
+            MemeTriggerUserSyntax(
+              x.value.toString.replaceAll(raw"\.\*", "%").replaceAll(raw"\.", "_")
+            )
 
-opaque type MemeTriggerUserSyntax = String
-object MemeTriggerUserSyntax:
-    def apply(s: String): MemeTriggerUserSyntax = s
+type MemeTriggerUserSyntax = MemeTriggerUserSyntax.T
+object MemeTriggerUserSyntax extends RefinedType[String, Pure]:
     extension (x: MemeTriggerUserSyntax)
-        inline def value: String                = x
         inline def toMemeTriggered: MemeTrigger =
-            MemeTrigger(x.replaceAll("%", ".*").replaceAll("_", ".").r)
+            MemeTrigger(x.value.replaceAll("%", ".*").replaceAll("_", ".").r)
 
 enum SupportedMemeType:
     case Sticker(sticker: canoe.models.Sticker)

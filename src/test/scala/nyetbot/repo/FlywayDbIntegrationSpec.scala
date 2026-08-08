@@ -68,7 +68,7 @@ class FlywayDbIntegrationSpec extends CatsEffectSuite:
                    )
             got <- repo.getProfile(UserId(42L))
         yield
-            assertEquals(got.map(_.displayName.value), Some("Гоша"))
+            assertEquals(got.map(_.displayName), Some(DisplayName("Гоша")))
             assertEquals(got.map(p => p.description.value: String), Some("любит казино"))
     }
 
