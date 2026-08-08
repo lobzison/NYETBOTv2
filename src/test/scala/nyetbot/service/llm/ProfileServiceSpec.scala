@@ -1,4 +1,4 @@
-package nyetbot.service
+package nyetbot.service.llm
 
 import cats.effect.IO
 import cats.effect.Ref

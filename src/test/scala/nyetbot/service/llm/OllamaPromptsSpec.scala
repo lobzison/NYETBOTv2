@@ -1,4 +1,4 @@
-package nyetbot.service
+package nyetbot.service.llm
 
 import munit.FunSuite
 import nyetbot.Fixtures

@@ -11,6 +11,7 @@ import fly4s.*
 import nyetbot.functionality.*
 import nyetbot.repo.*
 import nyetbot.service.{HeartbeatService, *}
+import nyetbot.service.llm.*
 import nyetbot.config.Config
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.Client
@@ -37,7 +38,7 @@ object Main extends IOApp.Simple:
         implicit val noopMeter: Meter[IO]   = Meter.noop
         for
             config <- Config.configResource
-            _ = println(config.llmConfig.botName)
+            _       = println(config.llmConfig.botName)
             tg     <- TelegramClient.global[IO](config.botToken)
             fly4s  <- fly4sRes[IO](config.dbConfig)
             db     <- buildSessionResource[IO](config.dbConfig)
@@ -62,7 +63,7 @@ object Main extends IOApp.Simple:
             meme              = MemeFunctionalityImpl(service)
             profileRepo       = ProfileRepoDB(db)
             ollamaService     =
-                OllamaService(client, config.ollamaConfig, config.llmConfig, config.ollamaDomain)
+                OllamaService(client, config.ollamaConfig, config.llmConfig)
             profileService    = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
             llm              <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
             mediaRelay        = MediaRelayFunctionalityImpl(MediaRelayServiceImpl())

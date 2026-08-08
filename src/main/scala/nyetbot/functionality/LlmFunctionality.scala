@@ -11,6 +11,7 @@ import cats.syntax.all.*
 import nyetbot.config.LlmConfig
 import nyetbot.model.*
 import nyetbot.service.*
+import nyetbot.service.llm.*
 
 import concurrent.duration.DurationInt
 

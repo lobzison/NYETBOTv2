@@ -2,6 +2,7 @@ package nyetbot.config
 import pureconfig.ConfigReader
 
 final case class OllamaConfig(
+    domain: String,
     port: Int,
     replyModel: String,
     utilityModel: String,
@@ -18,4 +19,4 @@ final case class OllamaConfig(
     requestTimeoutMinutes: Int,
     idleTimeoutMinutes: Int
 ) derives ConfigReader:
-    def uri(domain: String): String = s"http://$domain:$port"
+    val uri: String = s"http://$domain:$port"

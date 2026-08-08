@@ -11,9 +11,9 @@ import munit.CatsEffectSuite
 import nyetbot.Fixtures
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserRef
-import nyetbot.service.GeneratedReply
-import nyetbot.service.ProfileService
-import nyetbot.service.Trigger
+import nyetbot.service.llm.GeneratedReply
+import nyetbot.service.llm.ProfileService
+import nyetbot.service.llm.Trigger
 
 class LlmFunctionalitySpec extends CatsEffectSuite:
 

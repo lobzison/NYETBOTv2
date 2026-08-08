@@ -9,7 +9,6 @@ import pureconfig.error.ConfigReaderException
 
 case class Config(
     botToken: String,
-    ollamaDomain: String,
     dbConfig: DbConfig,
     llmConfig: LlmConfig,
     ollamaConfig: OllamaConfig
@@ -19,7 +18,6 @@ object Config:
     final case class RawConfig(
         botToken: String,
         databaseUrl: String,
-        ollamaDomain: String,
         llm: LlmConfig,
         ollama: OllamaConfig
     ) derives ConfigReader
@@ -33,7 +31,6 @@ object Config:
         ).map { settings =>
             Config(
               botToken = settings.botToken,
-              ollamaDomain = settings.ollamaDomain,
               dbConfig = DbConfig(settings.databaseUrl),
               llmConfig = settings.llm,
               ollamaConfig = settings.ollama

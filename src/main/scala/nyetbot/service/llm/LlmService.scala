@@ -1,4 +1,4 @@
-package nyetbot.service
+package nyetbot.service.llm
 
 import cats.effect.IO
 import io.circe.Json
@@ -204,8 +204,7 @@ ${renderChat(recentChat, cfg)}
 class OllamaService(
     client: Client[IO],
     config: OllamaConfig,
-    llmConfig: LlmConfig,
-    ollamaDomain: String
+    llmConfig: LlmConfig
 ) extends LlmService:
 
     private def complete(
@@ -218,7 +217,7 @@ class OllamaService(
             json"""{ "model": $model, "prompt": $prompt, "stream": false, "think": ${config.think},
                      "options": { "num_predict": $numPredict, "temperature": $temperature,
                                   "num_ctx": ${config.numCtx} } }"""
-        val uri     = Uri.unsafeFromString(s"${config.uri(ollamaDomain)}/api/generate")
+        val uri     = Uri.unsafeFromString(s"${config.uri}/api/generate")
         val request = Request[IO](method = POST).withUri(uri).withEntity(body)
         client
             .run(request)
