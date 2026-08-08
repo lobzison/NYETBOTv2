@@ -2,9 +2,7 @@ package nyetbot.repo
 
 import cats.effect.IO
 import cats.effect.kernel.Ref
-import nyetbot.model.MemeCreationRequest
-import nyetbot.model.MemeId
-import nyetbot.model.MemeRow
+import nyetbot.model.MemeModels.*
 
 class MemeRepoInMemory(ref: Ref[IO, List[MemeRow]]) extends MemeRepo:
     override def getAllMemes: IO[List[MemeRow]]               =

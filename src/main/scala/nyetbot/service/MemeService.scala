@@ -3,10 +3,7 @@ package nyetbot.service
 import cats.Show
 import cats.effect.IO
 import nyetbot.model.Chance
-import nyetbot.model.Meme
-import nyetbot.model.MemeCreationRequest
-import nyetbot.model.MemeId
-import nyetbot.model.SupportedMemeType
+import nyetbot.model.MemeModels.*
 
 trait MemeService:
     def getAllMemes: IO[List[Meme]]

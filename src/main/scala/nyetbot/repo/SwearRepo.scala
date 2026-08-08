@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.implicits.*
 import io.github.iltotore.iron.*
 import nyetbot.model.*
+import nyetbot.model.SwearModels.*
 import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*

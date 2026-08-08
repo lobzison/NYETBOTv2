@@ -1,9 +1,7 @@
 package nyetbot.repo
 
 import cats.effect.IO
-import nyetbot.model.MemeCreationRequest
-import nyetbot.model.MemeId
-import nyetbot.model.MemeRow
+import nyetbot.model.MemeModels.*
 
 trait MemeRepo:
     def getAllMemes: IO[List[MemeRow]]

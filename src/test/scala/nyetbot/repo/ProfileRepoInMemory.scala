@@ -2,7 +2,7 @@ package nyetbot.repo
 
 import cats.effect.IO
 import cats.effect.Ref
-import nyetbot.model.*
+import nyetbot.model.ProfileModels.*
 
 import java.time.OffsetDateTime
 

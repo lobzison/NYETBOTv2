@@ -6,8 +6,7 @@ import cats.effect.std.Random
 import io.github.iltotore.iron.*
 import nyetbot.config.ProfileServiceConfig
 import nyetbot.model.LlmContextMessage
-import nyetbot.model.ProfileDescription
-import nyetbot.model.UserRef
+import nyetbot.model.ProfileModels.*
 import nyetbot.repo.ProfileRepo
 import nyetbot.service.llm.LlmService.{Register, ReplyContext, TagIntent}
 

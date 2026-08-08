@@ -2,10 +2,8 @@ package nyetbot.service.llm
 
 import munit.FunSuite
 import nyetbot.Fixtures
-import nyetbot.model.DisplayName
 import nyetbot.model.LlmContextMessage
-import nyetbot.model.UserId
-import nyetbot.model.UserRef
+import nyetbot.model.ProfileModels.*
 import nyetbot.service.llm.LlmService.*
 
 class OllamaPromptsSpec extends FunSuite:

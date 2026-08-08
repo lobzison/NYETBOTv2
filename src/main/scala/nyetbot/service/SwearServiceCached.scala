@@ -7,6 +7,7 @@ import cats.effect.std.Random
 import cats.implicits.*
 import io.github.iltotore.iron.*
 import nyetbot.model.*
+import nyetbot.model.SwearModels.*
 import nyetbot.repo.SwearRepo
 
 class SwearServiceCached(

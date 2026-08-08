@@ -2,7 +2,7 @@ package nyetbot.repo
 
 import cats.effect.*
 import cats.implicits.*
-import nyetbot.model.*
+import nyetbot.model.MemeModels.*
 import skunk.*
 import skunk.circe.codec.json.json
 import skunk.codec.all.*

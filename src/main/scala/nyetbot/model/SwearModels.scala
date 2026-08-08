@@ -8,45 +8,47 @@ import io.github.iltotore.iron.constraint.any.Pure
 import skunk.*
 import skunk.codec.all.*
 
-type Swear = Swear.T
+object SwearModels:
 
-object Swear extends RefinedType[String, Not[Empty]]
+    type Swear = Swear.T
 
-type SwearId = SwearId.T
+    object Swear extends RefinedType[String, Not[Empty]]
 
-object SwearId extends RefinedType[Int, Pure]
+    type SwearId = SwearId.T
 
-type SwearGroupId = SwearGroupId.T
+    object SwearId extends RefinedType[Int, Pure]
 
-object SwearGroupId extends RefinedType[Int, Pure]
+    type SwearGroupId = SwearGroupId.T
 
-type Weight = Weight.T
+    object SwearGroupId extends RefinedType[Int, Pure]
 
-object Weight extends RefinedType[Int, Positive]
+    type Weight = Weight.T
 
-case class SwearGroup(totalWeight: Int, swears: List[SwearRow])
+    object Weight extends RefinedType[Int, Positive]
 
-case class SwearMemoryStorage(
-    swearRows: List[SwearRow],
-    swearGroupsOrdered: List[(SwearGroupId, Chance)],
-    groupedSwears: Map[SwearGroupId, SwearGroup]
-)
+    case class SwearGroup(totalWeight: Int, swears: List[SwearRow])
 
-case class SwearRow(
-    groupId: SwearGroupId,
-    groupChance: Chance,
-    id: SwearId,
-    swear: Swear,
-    weight: Weight
-)
+    case class SwearMemoryStorage(
+        swearRows: List[SwearRow],
+        swearGroupsOrdered: List[(SwearGroupId, Chance)],
+        groupedSwears: Map[SwearGroupId, SwearGroup]
+    )
 
-object SwearRow:
-    val swearRow: Decoder[SwearRow] =
-        (int4 ~ int4 ~ int4 ~ text ~ int4).emap {
-            case groupId ~ groupChance ~ id ~ swear ~ weight =>
-                for
-                    chance <- Chance.either(groupChance)
-                    sw     <- Swear.either(swear)
-                    wt     <- Weight.either(weight)
-                yield SwearRow(SwearGroupId(groupId), chance, SwearId(id), sw, wt)
-        }
+    case class SwearRow(
+        groupId: SwearGroupId,
+        groupChance: Chance,
+        id: SwearId,
+        swear: Swear,
+        weight: Weight
+    )
+
+    object SwearRow:
+        val swearRow: Decoder[SwearRow] =
+            (int4 ~ int4 ~ int4 ~ text ~ int4).emap {
+                case groupId ~ groupChance ~ id ~ swear ~ weight =>
+                    for
+                        chance <- Chance.either(groupChance)
+                        sw     <- Swear.either(swear)
+                        wt     <- Weight.either(weight)
+                    yield SwearRow(SwearGroupId(groupId), chance, SwearId(id), sw, wt)
+            }

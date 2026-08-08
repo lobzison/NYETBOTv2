@@ -1,7 +1,7 @@
 package nyetbot.repo
 
 import cats.effect.IO
-import nyetbot.model.*
+import nyetbot.model.ProfileModels.*
 
 trait ProfileRepo:
     def getProfile(userId: UserId): IO[Option[Profile]]

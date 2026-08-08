@@ -5,7 +5,7 @@ import nyetbot.client.OllamaClient
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.SummarizeUserFeatureConfig
 import nyetbot.model.LlmContextMessage
-import nyetbot.model.UserRef
+import nyetbot.model.ProfileModels.*
 import nyetbot.util.Text
 
 trait SummarizeUserFeature:

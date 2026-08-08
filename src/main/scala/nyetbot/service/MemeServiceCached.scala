@@ -6,7 +6,8 @@ import cats.effect.std.Random
 import cats.implicits.*
 import io.github.iltotore.iron.*
 import nyetbot.model.*
-import nyetbot.model.MemeRow.*
+import nyetbot.model.MemeModels.*
+import nyetbot.model.MemeModels.MemeRow.*
 import nyetbot.repo.MemeRepo
 
 class MemeServiceCached(vault: MemeRepo, memesF: Ref[IO, List[Meme]])(using Random[IO])

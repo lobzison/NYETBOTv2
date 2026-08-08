@@ -2,6 +2,7 @@ package nyetbot.model
 
 import canoe.models.messages.TextMessage
 import nyetbot.config.LlmFunctionalityConfig
+import nyetbot.model.ProfileModels.*
 
 final case class LlmContextMessage(userId: Option[UserId], userName: String, text: String)
 

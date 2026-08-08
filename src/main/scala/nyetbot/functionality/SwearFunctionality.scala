@@ -8,6 +8,7 @@ import cats.*
 import cats.effect.IO
 import io.github.iltotore.iron.*
 import nyetbot.model.*
+import nyetbot.model.SwearModels.*
 import nyetbot.service.SwearService
 
 import scala.util.Try

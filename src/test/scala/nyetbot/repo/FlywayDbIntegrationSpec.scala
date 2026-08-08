@@ -10,7 +10,8 @@ import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.all.*
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import munit.CatsEffectSuite
-import nyetbot.model.*
+import nyetbot.model.ProfileModels.*
+import nyetbot.model.SwearModels.*
 import org.typelevel.otel4s.metrics.Meter
 import org.typelevel.otel4s.trace.Tracer
 import skunk.*

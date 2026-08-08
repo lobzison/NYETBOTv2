@@ -10,37 +10,41 @@ import skunk.codec.all.*
 
 import java.time.OffsetDateTime
 
-type UserId = UserId.T
+object ProfileModels:
 
-object UserId extends RefinedType[Long, Pure]
+    type UserId = UserId.T
 
-type DisplayName = DisplayName.T
+    object UserId extends RefinedType[Long, Pure]
 
-object DisplayName extends RefinedType[String, Pure]
+    type DisplayName = DisplayName.T
 
-type ProfileDescription = ProfileDescription.T
+    object DisplayName extends RefinedType[String, Pure]
 
-object ProfileDescription extends RefinedType[String, MaxLength[300]]:
-    def truncate(s: String): ProfileDescription =
-        either(Text.truncate(s, 300)).getOrElse(ProfileDescription(""))
+    type ProfileDescription = ProfileDescription.T
 
-final case class UserRef(id: UserId, displayName: DisplayName)
+    object ProfileDescription extends RefinedType[String, MaxLength[300]]:
+        def truncate(s: String): ProfileDescription =
+            either(Text.truncate(s, 300)).getOrElse(ProfileDescription(""))
 
-object UserRef:
-    def fromUser(u: User): UserRef =
-        val last   = u.lastName.map(" " + _).getOrElse("")
-        val handle = u.username.map(n => s" (@$n)").getOrElse("")
-        UserRef(UserId(u.id), DisplayName(s"${u.firstName}$last$handle"))
+    final case class UserRef(id: UserId, displayName: DisplayName)
 
-final case class Profile(
-    userId: UserId,
-    displayName: DisplayName,
-    description: ProfileDescription,
-    updatedAt: OffsetDateTime
-)
+    object UserRef:
+        def fromUser(u: User): UserRef =
+            val last   = u.lastName.map(" " + _).getOrElse("")
+            val handle = u.username.map(n => s" (@$n)").getOrElse("")
+            UserRef(UserId(u.id), DisplayName(s"${u.firstName}$last$handle"))
 
-object Profile:
-    val codec: Decoder[Profile] =
-        (int8 ~ text ~ text ~ timestamptz).emap { case id ~ dn ~ desc ~ ts =>
-            ProfileDescription.either(desc).map(d => Profile(UserId(id), DisplayName(dn), d, ts))
-        }
+    final case class Profile(
+        userId: UserId,
+        displayName: DisplayName,
+        description: ProfileDescription,
+        updatedAt: OffsetDateTime
+    )
+
+    object Profile:
+        val codec: Decoder[Profile] =
+            (int8 ~ text ~ text ~ timestamptz).emap { case id ~ dn ~ desc ~ ts =>
+                ProfileDescription
+                    .either(desc)
+                    .map(d => Profile(UserId(id), DisplayName(dn), d, ts))
+            }

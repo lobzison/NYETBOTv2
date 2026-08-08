@@ -3,7 +3,7 @@ package nyetbot.service.llm
 import cats.effect.IO
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.model.LlmContextMessage
-import nyetbot.model.UserRef
+import nyetbot.model.ProfileModels.*
 import nyetbot.service.llm.feature.ClassifyIntentFeature
 import nyetbot.service.llm.feature.ClassifyRegisterFeature
 import nyetbot.service.llm.feature.ReplyFeature

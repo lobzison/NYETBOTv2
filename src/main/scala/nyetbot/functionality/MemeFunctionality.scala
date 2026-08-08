@@ -10,6 +10,7 @@ import cats.implicits.*
 import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.all.*
 import nyetbot.model.*
+import nyetbot.model.MemeModels.*
 import nyetbot.service.MemeService
 
 import scala.util.Try

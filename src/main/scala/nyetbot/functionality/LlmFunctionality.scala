@@ -10,6 +10,7 @@ import cats.effect.std.Random
 import cats.syntax.all.*
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.model.*
+import nyetbot.model.ProfileModels.*
 import nyetbot.service.*
 import nyetbot.service.llm.*
 import nyetbot.service.llm.ProfileService.Trigger

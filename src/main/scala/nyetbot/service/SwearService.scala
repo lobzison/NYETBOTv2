@@ -3,6 +3,7 @@ package nyetbot.service
 import cats.Show
 import cats.effect.IO
 import nyetbot.model.*
+import nyetbot.model.SwearModels.*
 
 trait SwearService:
     def showSwearGroups(using Show[Chance]): IO[String]

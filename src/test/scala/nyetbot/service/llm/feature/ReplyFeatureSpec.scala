@@ -8,10 +8,8 @@ import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
 import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.config.llm.feature.ReplyFeatureConfig
-import nyetbot.model.DisplayName
 import nyetbot.model.LlmContextMessage
-import nyetbot.model.UserId
-import nyetbot.model.UserRef
+import nyetbot.model.ProfileModels.*
 import nyetbot.service.llm.LlmService.{Register, ReplyContext, TagIntent}
 
 class ReplyFeatureSpec extends CatsEffectSuite:

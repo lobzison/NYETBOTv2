@@ -3,7 +3,7 @@ package nyetbot.repo
 import cats.effect.*
 import cats.implicits.*
 import io.github.iltotore.iron.*
-import nyetbot.model.*
+import nyetbot.model.ProfileModels.*
 import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*

@@ -9,7 +9,7 @@ import nyetbot.client.OllamaClient
 import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.config.llm.feature.SummarizeThreadFeatureConfig
 import nyetbot.model.LlmContextMessage
-import nyetbot.model.UserId
+import nyetbot.model.ProfileModels.*
 
 class SummarizeThreadFeatureSpec extends CatsEffectSuite:
 

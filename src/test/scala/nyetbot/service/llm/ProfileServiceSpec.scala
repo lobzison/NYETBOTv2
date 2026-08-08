@@ -6,10 +6,8 @@ import cats.effect.std.Random
 import io.github.iltotore.iron.*
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
-import nyetbot.model.DisplayName
 import nyetbot.model.LlmContextMessage
-import nyetbot.model.UserId
-import nyetbot.model.UserRef
+import nyetbot.model.ProfileModels.*
 import nyetbot.repo.ProfileRepoInMemory
 import nyetbot.service.llm.LlmService.*
 import nyetbot.service.llm.ProfileService.*

@@ -5,6 +5,7 @@ import canoe.models.User
 import canoe.models.messages.TextMessage
 import munit.FunSuite
 import nyetbot.Fixtures
+import nyetbot.model.ProfileModels.*
 
 class LlmContextMessageSpec extends FunSuite:
 

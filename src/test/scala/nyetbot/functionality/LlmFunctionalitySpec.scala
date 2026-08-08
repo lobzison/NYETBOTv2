@@ -10,7 +10,7 @@ import cats.effect.std.Random
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
 import nyetbot.model.LlmContextMessage
-import nyetbot.model.UserRef
+import nyetbot.model.ProfileModels.*
 import nyetbot.service.llm.ProfileService
 import nyetbot.service.llm.ProfileService.{GeneratedReply, Trigger}
 
