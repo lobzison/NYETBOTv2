@@ -8,7 +8,9 @@ import nyetbot.config.ProfileServiceConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
 import nyetbot.repo.ProfileRepo
-import nyetbot.service.llm.LlmService.{Register, ReplyContext, TagIntent}
+import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
+import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
+import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
 
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

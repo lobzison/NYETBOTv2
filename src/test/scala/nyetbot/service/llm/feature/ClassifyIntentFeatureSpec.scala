@@ -10,7 +10,7 @@ import nyetbot.config.llm.feature.ClassifyIntentFeatureConfig
 import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
-import nyetbot.service.llm.LlmService.TagIntent
+import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
 
 class ClassifyIntentFeatureSpec extends CatsEffectSuite:
 

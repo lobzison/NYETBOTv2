@@ -1,16 +1,34 @@
 package nyetbot.service.llm.feature
 
-import cats.effect.IO
 import nyetbot.client.OllamaClient
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.ReplyFeatureConfig
 import nyetbot.model.LlmContextMessage
-import nyetbot.service.llm.LlmService.{Register, ReplyContext, TagIntent}
+import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
+import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
+import cats.effect.IO
+import nyetbot.model.ProfileModels.*
 
 trait ReplyFeature:
-    def generateReply(ctx: ReplyContext): IO[String]
+    def generateReply(ctx: ReplyFeature.ReplyContext): IO[String]
 
 object ReplyFeature:
+
+    final case class ReplyContext(
+        target: UserRef,
+        profile: String,
+        recentSummary: String,
+        topic: String,
+        recentChat: List[LlmContextMessage],
+        intent: TagIntent,
+        register: Register,
+        minChars: Int,
+        triggerText: String,
+        currentDate: String,
+        replyToText: String,
+        replyToBot: Boolean
+    )
+
     def apply(
         client: OllamaClient,
         config: ReplyFeatureConfig,

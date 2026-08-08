@@ -9,8 +9,10 @@ import nyetbot.Fixtures
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
 import nyetbot.repo.ProfileRepoInMemory
-import nyetbot.service.llm.LlmService.*
 import nyetbot.service.llm.ProfileService.*
+import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
+import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
+import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
 
 class ProfileServiceSpec extends CatsEffectSuite:
 

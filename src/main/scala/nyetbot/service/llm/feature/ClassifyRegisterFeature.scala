@@ -5,15 +5,22 @@ import nyetbot.client.OllamaClient
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.ClassifyRegisterFeatureConfig
 import nyetbot.model.LlmContextMessage
-import nyetbot.service.llm.LlmService.Register
 
 trait ClassifyRegisterFeature:
     def classifyRegister(
         triggerText: String,
         recentChat: List[LlmContextMessage]
-    ): IO[Register]
+    ): IO[ClassifyRegisterFeature.Register]
 
 object ClassifyRegisterFeature:
+
+    enum Register:
+        case Spor
+        case Sobytie
+        case Shutka
+        case Vopros
+        case Byt
+
     def apply(
         client: OllamaClient,
         config: ClassifyRegisterFeatureConfig,

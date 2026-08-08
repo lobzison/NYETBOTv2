@@ -10,7 +10,7 @@ import nyetbot.config.llm.feature.ClassifyRegisterFeatureConfig
 import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
-import nyetbot.service.llm.LlmService.Register
+import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
 
 class ClassifyRegisterFeatureSpec extends CatsEffectSuite:
 

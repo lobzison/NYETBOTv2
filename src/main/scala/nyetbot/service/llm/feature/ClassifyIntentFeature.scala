@@ -5,16 +5,20 @@ import nyetbot.client.OllamaClient
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.ClassifyIntentFeatureConfig
 import nyetbot.model.LlmContextMessage
-import nyetbot.service.llm.LlmService.TagIntent
 
 trait ClassifyIntentFeature:
     def classifyIntent(
         question: String,
         replyToText: String,
         recentChat: List[LlmContextMessage]
-    ): IO[TagIntent]
+    ): IO[ClassifyIntentFeature.TagIntent]
 
 object ClassifyIntentFeature:
+
+    enum TagIntent:
+        case Contextual
+        case NewQuestion
+
     def apply(
         client: OllamaClient,
         config: ClassifyIntentFeatureConfig,

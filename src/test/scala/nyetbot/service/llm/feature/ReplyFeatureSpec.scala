@@ -10,7 +10,9 @@ import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.config.llm.feature.ReplyFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
-import nyetbot.service.llm.LlmService.{Register, ReplyContext, TagIntent}
+import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
+import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
+import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
 
 class ReplyFeatureSpec extends CatsEffectSuite:
 

@@ -4,14 +4,17 @@ import cats.effect.IO
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
+import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
 import nyetbot.service.llm.feature.ClassifyIntentFeature
 import nyetbot.service.llm.feature.ClassifyRegisterFeature
+import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
 import nyetbot.service.llm.feature.ReplyFeature
+import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
 import nyetbot.service.llm.feature.SummarizeThreadFeature
 import nyetbot.service.llm.feature.SummarizeUserFeature
 
 trait LlmService:
-    def generateReply(ctx: LlmService.ReplyContext): IO[String]
+    def generateReply(ctx: ReplyContext): IO[String]
     def summarizeUser(recent: List[LlmContextMessage], who: UserRef): IO[String]
     def summarizeThread(recentChat: List[LlmContextMessage]): IO[String]
     def rewriteProfile(oldProfile: String, recentSummary: String, who: UserRef): IO[String]
@@ -19,38 +22,13 @@ trait LlmService:
         question: String,
         replyToText: String,
         recentChat: List[LlmContextMessage]
-    ): IO[LlmService.TagIntent]
+    ): IO[TagIntent]
     def classifyRegister(
         triggerText: String,
         recentChat: List[LlmContextMessage]
-    ): IO[LlmService.Register]
+    ): IO[Register]
 
 object LlmService:
-    enum TagIntent:
-        case Contextual
-        case NewQuestion
-
-    enum Register:
-        case Spor
-        case Sobytie
-        case Shutka
-        case Vopros
-        case Byt
-
-    final case class ReplyContext(
-        target: UserRef,
-        profile: String,
-        recentSummary: String,
-        topic: String,
-        recentChat: List[LlmContextMessage],
-        intent: TagIntent,
-        register: Register,
-        minChars: Int,
-        triggerText: String,
-        currentDate: String,
-        replyToText: String,
-        replyToBot: Boolean
-    )
 
     object OllamaPrompts:
         def reply(ctx: ReplyContext, cfg: LlmFunctionalityConfig): String =
