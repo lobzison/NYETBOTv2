@@ -3,7 +3,6 @@ package nyetbot.service.llm.feature
 import cats.effect.IO
 import nyetbot.client.OllamaClient
 import nyetbot.config.LlmConfig
-import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.config.llm.feature.SummarizeUserFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserRef
@@ -26,27 +25,8 @@ class SummarizeUserFeatureImpl(
     config: SummarizeUserFeatureConfig,
     llmConfig: LlmConfig
 ) extends SummarizeUserFeature:
-    private def request(modelConfig: OllamaModelConfig): OllamaClient.Req =
-        OllamaClient.Req(
-          model = modelConfig.model,
-          system = None,
-          template = None,
-          prompt = "",
-          stream = false,
-          think = modelConfig.think,
-          options = OllamaClient.Req.Options(
-            numPredict = modelConfig.numPredict,
-            temperature = modelConfig.temperature,
-            topP = modelConfig.topP,
-            topK = modelConfig.topK,
-            repeatPenalty = modelConfig.repeatPenalty,
-            numCtx = modelConfig.numCtx,
-            stop = modelConfig.stop
-          )
-        )
-
-    private val summaryRequest = request(config.modelConfig)
-    private val rewriteRequest = request(config.rewriteModelConfig)
+    private val summaryRequest = OllamaClient.Req.from(config.modelConfig)
+    private val rewriteRequest = OllamaClient.Req.from(config.rewriteModelConfig)
 
     override def summarizeUser(recent: List[LlmContextMessage], who: UserRef): IO[String] =
         client

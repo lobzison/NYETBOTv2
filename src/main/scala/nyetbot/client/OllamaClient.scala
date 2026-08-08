@@ -4,6 +4,7 @@ import cats.effect.IO
 import io.circe.{Encoder, Json}
 import io.circe.derivation.{ConfiguredEncoder, Configuration}
 import io.circe.syntax.*
+import nyetbot.config.llm.feature.OllamaModelConfig
 import org.http4s.Method.POST
 import org.http4s.Request
 import org.http4s.Uri
@@ -26,6 +27,25 @@ object OllamaClient:
         options: Req.Options
     )
     object Req:
+        def from(config: OllamaModelConfig): Req =
+            Req(
+              model = config.model,
+              system = config.system,
+              template = config.template,
+              prompt = "",
+              stream = false,
+              think = config.think,
+              options = Options(
+                numPredict = config.numPredict,
+                temperature = config.temperature,
+                topP = config.topP,
+                topK = config.topK,
+                repeatPenalty = config.repeatPenalty,
+                numCtx = config.numCtx,
+                stop = config.stop
+              )
+            )
+
         case class Options(
             numPredict: Option[Int],
             temperature: Option[Double],

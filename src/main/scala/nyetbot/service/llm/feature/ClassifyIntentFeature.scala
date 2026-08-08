@@ -27,23 +27,7 @@ class ClassifyIntentFeatureImpl(
     config: ClassifyIntentFeatureConfig,
     llmConfig: LlmConfig
 ) extends ClassifyIntentFeature:
-    private val request = OllamaClient.Req(
-      model = config.modelConfig.model,
-      system = None,
-      template = None,
-      prompt = "",
-      stream = false,
-      think = config.modelConfig.think,
-      options = OllamaClient.Req.Options(
-        numPredict = config.modelConfig.numPredict,
-        temperature = config.modelConfig.temperature,
-        topP = config.modelConfig.topP,
-        topK = config.modelConfig.topK,
-        repeatPenalty = config.modelConfig.repeatPenalty,
-        numCtx = config.modelConfig.numCtx,
-        stop = config.modelConfig.stop
-      )
-    )
+    private val request = OllamaClient.Req.from(config.modelConfig)
 
     override def classifyIntent(
         question: String,

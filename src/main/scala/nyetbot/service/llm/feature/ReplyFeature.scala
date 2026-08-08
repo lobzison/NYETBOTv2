@@ -23,23 +23,7 @@ class ReplyFeatureImpl(
     config: ReplyFeatureConfig,
     llmConfig: LlmConfig
 ) extends ReplyFeature:
-    private val request = OllamaClient.Req(
-      model = config.modelConfig.model,
-      system = config.modelConfig.system,
-      template = config.modelConfig.template,
-      prompt = "",
-      stream = false,
-      think = config.modelConfig.think,
-      options = OllamaClient.Req.Options(
-        numPredict = config.modelConfig.numPredict,
-        temperature = config.modelConfig.temperature,
-        topP = config.modelConfig.topP,
-        topK = config.modelConfig.topK,
-        repeatPenalty = config.modelConfig.repeatPenalty,
-        numCtx = config.modelConfig.numCtx,
-        stop = config.modelConfig.stop
-      )
-    )
+    private val request = OllamaClient.Req.from(config.modelConfig)
 
     override def generateReply(ctx: ReplyContext): IO[String] =
         client.generate(request.copy(prompt = ReplyFeaturePrompt.render(ctx, llmConfig)))
