@@ -12,119 +12,114 @@ import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.model.*
 import nyetbot.service.*
 import nyetbot.service.llm.*
+import nyetbot.service.llm.ProfileService.Trigger
 
 import concurrent.duration.DurationInt
 
 trait LlmFunctionality:
     def reply: Scenario[IO, Unit]
+    def isReplyToBot(msg: TextMessage): Boolean
 
-class LlmFunctionalityImpl(
-    profileService: ProfileService,
-    contextRef: Ref[IO, Vector[LlmContextMessage]],
-    userHistoryRef: Ref[IO, Map[UserId, Vector[LlmContextMessage]]],
-    mutex: Mutex[IO],
-    config: LlmFunctionalityConfig
-)(using TelegramClient[IO], Random[IO])
-    extends LlmFunctionality:
-
-    def ingest(msg: TextMessage): IO[Unit] =
-        val newMsg = LlmContextMessage.fromTextMessage(msg, config)
-        for
-            _ <- contextRef.update(m => (m :+ newMsg).takeRight(config.chatBufferSize))
-            _ <- msg.from.traverse_ { u =>
-                     userHistoryRef.update { map =>
-                         val buf =
-                             (map.getOrElse(UserId(u.id), Vector.empty) :+ newMsg)
-                                 .takeRight(config.recentUserMessages)
-                         map.updated(UserId(u.id), buf)
-                     }
-                 }
-        yield ()
-
-    def isReplyToBot(msg: TextMessage): Boolean =
-        msg.replyToMessage.exists {
-            case t: TextMessage =>
-                t.from.exists(u =>
-                    u.isBot && u.username.exists(un => ("@" + un).equalsIgnoreCase(config.botAlias))
-                ) && msg.quote.isEmpty
-            case _              => false
-        }
-
-    def maybeReply(msg: TextMessage): IO[Unit] =
-        val tagged     = msg.text.contains(config.botAlias)
-        val replyToBot = isReplyToBot(msg)
-        val fire       =
-            mutex.lock
-                .surround(triggerReply(msg, tagged, replyToBot))
-                .handleErrorWith(e => IO.println(s"LLM reply failed: ${e.getMessage}"))
-        for
-            roll <- Random[IO].betweenInt(0, config.messageEvery)
-            _    <- if roll == 0 || tagged || replyToBot then fire else IO.unit
-        yield ()
-
-    def triggerReply(msg: TextMessage, tagged: Boolean, replyToBot: Boolean): IO[Unit] =
-        def sendIfNotEmpty(s: String) =
-            if s.nonEmpty then msg.chat.send(s, replyToMessageId = Some(msg.messageId)).void
-            else IO.unit
-
-        def typing: IO[Unit] =
-            msg.chat.setAction[IO](ChatAction.Typing).void >> IO.sleep(4.seconds) >> typing
-
-        def replyToText: String =
-            msg.replyToMessage match
-                case Some(t: TextMessage) => t.text
-                case _                    => ""
-
-        msg.from match
-            case None       =>
-                IO.unit
-            case Some(user) =>
-                val target      = UserRef.fromUser(user)
-                val triggerText = msg.text.replace(config.botAlias, config.botName)
-                val trigger     =
-                    if tagged || replyToBot then Trigger.Tagged(msg.text, replyToText, replyToBot)
-                    else Trigger.Random(replyToText)
-
-                val produce =
-                    for
-                        recentChat <-
-                            contextRef.get.map(_.takeRight(config.replyContextWindow).toList)
-                        recentUser <-
-                            userHistoryRef.get.map(
-                              _.getOrElse(UserId(user.id), Vector.empty).toList
-                            )
-                        gen        <- profileService.generateReply(
-                                        target,
-                                        triggerText,
-                                        recentUser,
-                                        recentChat,
-                                        trigger
-                                      )
-                        _          <- contextRef.update(m =>
-                                          (m :+ LlmContextMessage(None, config.botName, gen.text))
-                                              .takeRight(config.chatBufferSize)
-                                      )
-                        _          <- sendIfNotEmpty(gen.text.trim)
-                    yield gen
-
-                produce.race(typing).flatMap {
-                    case Left(gen) => profileService.rewriteProfile(target, gen)
-                    case Right(_)  => IO.unit
-                }
-
-    override def reply: Scenario[IO, Unit] =
-        for
-            msg <- Scenario.expect(textMessage)
-            _   <- Scenario.eval(ingest(msg) *> maybeReply(msg))
-        yield ()
-
-object LlmFunctionalityImpl:
-    def mk(profileService: ProfileService, config: LlmFunctionalityConfig)(using
+object LlmFunctionality:
+    def apply(profileService: ProfileService, config: LlmFunctionalityConfig)(using
         TelegramClient[IO],
         Random[IO]
-    ): IO[LlmFunctionalityImpl] =
+    ): IO[LlmFunctionality] =
         for
-            m       <- Mutex[IO]
-            r       <- Ref.of[IO, Vector[LlmContextMessage]](Vector.empty)
+            mutex   <- Mutex[IO]
+            context <- Ref.of[IO, Vector[LlmContextMessage]](Vector.empty)
             perUser <- Ref.of[IO, Map[UserId, Vector[LlmContextMessage]]](Map.empty)
-        yield LlmFunctionalityImpl(profileService, r, perUser, m, config)
+        yield new LlmFunctionality:
+            def ingest(msg: TextMessage): IO[Unit] =
+                val newMsg = LlmContextMessage.fromTextMessage(msg, config)
+                for
+                    _ <- context.update(m => (m :+ newMsg).takeRight(config.chatBufferSize))
+                    _ <- msg.from.traverse_ { u =>
+                             perUser.update { map =>
+                                 val buf =
+                                     (map.getOrElse(UserId(u.id), Vector.empty) :+ newMsg)
+                                         .takeRight(config.recentUserMessages)
+                                 map.updated(UserId(u.id), buf)
+                             }
+                         }
+                yield ()
+
+            override def isReplyToBot(msg: TextMessage): Boolean =
+                msg.replyToMessage.exists {
+                    case t: TextMessage =>
+                        t.from.exists(u =>
+                            u.isBot && u.username.exists(un =>
+                                ("@" + un).equalsIgnoreCase(config.botAlias)
+                            )
+                        ) && msg.quote.isEmpty
+                    case _              => false
+                }
+
+            def maybeReply(msg: TextMessage): IO[Unit] =
+                val tagged     = msg.text.contains(config.botAlias)
+                val replyToBot = isReplyToBot(msg)
+                val fire       =
+                    mutex.lock
+                        .surround(triggerReply(msg, tagged, replyToBot))
+                        .handleErrorWith(e => IO.println(s"LLM reply failed: ${e.getMessage}"))
+                for
+                    roll <- Random[IO].betweenInt(0, config.messageEvery)
+                    _    <- if roll == 0 || tagged || replyToBot then fire else IO.unit
+                yield ()
+
+            def triggerReply(msg: TextMessage, tagged: Boolean, replyToBot: Boolean): IO[Unit] =
+                def sendIfNotEmpty(s: String) =
+                    if s.nonEmpty then msg.chat.send(s, replyToMessageId = Some(msg.messageId)).void
+                    else IO.unit
+
+                def typing: IO[Unit] =
+                    msg.chat.setAction[IO](ChatAction.Typing).void >> IO.sleep(4.seconds) >> typing
+
+                def replyToText: String =
+                    msg.replyToMessage match
+                        case Some(t: TextMessage) => t.text
+                        case _                    => ""
+
+                msg.from match
+                    case None       =>
+                        IO.unit
+                    case Some(user) =>
+                        val target      = UserRef.fromUser(user)
+                        val triggerText = msg.text.replace(config.botAlias, config.botName)
+                        val trigger     =
+                            if tagged || replyToBot then
+                                Trigger.Tagged(msg.text, replyToText, replyToBot)
+                            else Trigger.Random(replyToText)
+
+                        val produce =
+                            for
+                                recentChat <-
+                                    context.get.map(_.takeRight(config.replyContextWindow).toList)
+                                recentUser <-
+                                    perUser.get.map(
+                                      _.getOrElse(UserId(user.id), Vector.empty).toList
+                                    )
+                                gen        <- profileService.generateReply(
+                                                target,
+                                                triggerText,
+                                                recentUser,
+                                                recentChat,
+                                                trigger
+                                              )
+                                _          <- context.update(m =>
+                                                  (m :+ LlmContextMessage(None, config.botName, gen.text))
+                                                      .takeRight(config.chatBufferSize)
+                                              )
+                                _          <- sendIfNotEmpty(gen.text.trim)
+                            yield gen
+
+                        produce.race(typing).flatMap {
+                            case Left(gen) => profileService.rewriteProfile(target, gen)
+                            case Right(_)  => IO.unit
+                        }
+
+            override def reply: Scenario[IO, Unit] =
+                for
+                    msg <- Scenario.expect(textMessage)
+                    _   <- Scenario.eval(ingest(msg) *> maybeReply(msg))
+                yield ()

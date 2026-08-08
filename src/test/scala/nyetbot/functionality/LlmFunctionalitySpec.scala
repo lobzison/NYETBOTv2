@@ -11,9 +11,8 @@ import munit.CatsEffectSuite
 import nyetbot.Fixtures
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserRef
-import nyetbot.service.llm.GeneratedReply
 import nyetbot.service.llm.ProfileService
-import nyetbot.service.llm.Trigger
+import nyetbot.service.llm.ProfileService.{GeneratedReply, Trigger}
 
 class LlmFunctionalitySpec extends CatsEffectSuite:
 
@@ -56,8 +55,7 @@ class LlmFunctionalitySpec extends CatsEffectSuite:
 
     test("reply to the configured bot username is detected case-insensitively") {
         Random.scalaUtilRandom[IO].flatMap { random =>
-            LlmFunctionalityImpl
-                .mk(profileService, Fixtures.llmConfig)(using client, random)
+            LlmFunctionality(profileService, Fixtures.llmConfig)(using client, random)
                 .map { functionality =>
                     assert(
                       functionality.isReplyToBot(

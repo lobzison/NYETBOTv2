@@ -12,9 +12,7 @@ import nyetbot.model.DisplayName
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserId
 import nyetbot.model.UserRef
-import nyetbot.service.llm.Register
-import nyetbot.service.llm.ReplyContext
-import nyetbot.service.llm.TagIntent
+import nyetbot.service.llm.LlmService.{Register, ReplyContext, TagIntent}
 
 class ReplyFeatureSpec extends CatsEffectSuite:
 

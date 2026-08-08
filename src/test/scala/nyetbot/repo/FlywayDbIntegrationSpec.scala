@@ -51,9 +51,9 @@ class FlywayDbIntegrationSpec extends CatsEffectSuite:
     override def munitFixtures = List(db)
 
     test("all migrations apply and V1_3 seeds the ten swears") {
-        SwearRepoImpl(db()).getSwears.map { swears =>
+        SwearRepo(db()).getSwears.map { swears =>
             assertEquals(swears.size, 10)
-            assert(swears.map(_.swear.value).contains("nyet"))
+            assert(swears.map(_.swear).contains(Swear("nyet")))
             assertEquals(swears.head.groupChance.value, 300)
         }
     }
@@ -69,7 +69,7 @@ class FlywayDbIntegrationSpec extends CatsEffectSuite:
             got <- repo.getProfile(UserId(42L))
         yield
             assertEquals(got.map(_.displayName), Some(DisplayName("Гоша")))
-            assertEquals(got.map(p => p.description.value: String), Some("любит казино"))
+            assertEquals(got.map(_.description), Some(ProfileDescription("любит казино")))
     }
 
     test("memes (V1_0/V1_1) round-trip a json body through the skunk-circe codec") {

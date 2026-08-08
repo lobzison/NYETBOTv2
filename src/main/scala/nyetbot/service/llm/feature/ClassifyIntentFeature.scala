@@ -5,7 +5,7 @@ import nyetbot.client.OllamaClient
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.ClassifyIntentFeatureConfig
 import nyetbot.model.LlmContextMessage
-import nyetbot.service.llm.TagIntent
+import nyetbot.service.llm.LlmService.TagIntent
 
 trait ClassifyIntentFeature:
     def classifyIntent(
@@ -20,48 +20,42 @@ object ClassifyIntentFeature:
         config: ClassifyIntentFeatureConfig,
         llmConfig: LlmFunctionalityConfig
     ): ClassifyIntentFeature =
-        new ClassifyIntentFeatureImpl(client, config, llmConfig)
+        new ClassifyIntentFeature:
+            private val request = OllamaClient.Req.from(config.modelConfig)
 
-class ClassifyIntentFeatureImpl(
-    client: OllamaClient,
-    config: ClassifyIntentFeatureConfig,
-    llmConfig: LlmFunctionalityConfig
-) extends ClassifyIntentFeature:
-    private val request = OllamaClient.Req.from(config.modelConfig)
+            override def classifyIntent(
+                question: String,
+                replyToText: String,
+                recentChat: List[LlmContextMessage]
+            ): IO[TagIntent] =
+                client
+                    .generate(
+                      request.copy(
+                        prompt = Prompt.render(
+                          question,
+                          replyToText,
+                          recentChat,
+                          llmConfig
+                        )
+                      )
+                    )
+                    .map { response =>
+                        if response.toUpperCase.contains("NEW") then TagIntent.NewQuestion
+                        else TagIntent.Contextual
+                    }
 
-    override def classifyIntent(
-        question: String,
-        replyToText: String,
-        recentChat: List[LlmContextMessage]
-    ): IO[TagIntent] =
-        client
-            .generate(
-              request.copy(
-                prompt = ClassifyIntentFeaturePrompt.render(
-                  question,
-                  replyToText,
-                  recentChat,
-                  llmConfig
-                )
-              )
-            )
-            .map { response =>
-                if response.toUpperCase.contains("NEW") then TagIntent.NewQuestion
-                else TagIntent.Contextual
-            }
+    object Prompt:
+        private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
+            chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
 
-object ClassifyIntentFeaturePrompt:
-    private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
-        chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
-
-    def render(
-        question: String,
-        replyToText: String,
-        recentChat: List[LlmContextMessage],
-        cfg: LlmFunctionalityConfig
-    ): String =
-        val repliedTo = if replyToText.isEmpty then "нет" else replyToText
-        s"""Определи, к чему относится обращение к боту.
+        def render(
+            question: String,
+            replyToText: String,
+            recentChat: List[LlmContextMessage],
+            cfg: LlmFunctionalityConfig
+        ): String =
+            val repliedTo = if replyToText.isEmpty then "нет" else replyToText
+            s"""Определи, к чему относится обращение к боту.
 Сообщение с упоминанием бота: $question
 Сообщение, на которое это ответ (может быть пустым): $repliedTo
 Недавний контекст чата:

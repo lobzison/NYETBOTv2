@@ -59,11 +59,11 @@ object Main extends IOApp.Simple:
             given Random[IO]       <- Random.scalaUtilRandom[IO]
             _                      <- fly4s.migrate
             memeRepo                = MemeRepoDB(db)
-            swearRepo               = SwearRepoImpl(db)
+            swearRepo               = SwearRepo(db)
             swearService           <- SwearServiceCached(swearRepo)
-            swear                   = SwearFunctionalityImpl(swearService)
+            swear                   = SwearFunctionality(swearService)
             service                <- MemeServiceCached(memeRepo)
-            meme                    = MemeFunctionalityImpl(service)
+            meme                    = MemeFunctionality(service)
             profileRepo             = ProfileRepoDB(db)
             ollamaClient            = OllamaClient(client, Uri.unsafeFromString(config.ollamaConfig.uri))
             replyFeature            = ReplyFeature(ollamaClient, config.ollamaConfig.reply, config.llmConfig)
@@ -92,7 +92,7 @@ object Main extends IOApp.Simple:
                   config.llmConfig
                 )
             ollamaService           =
-                OllamaService(
+                LlmService(
                   replyFeature,
                   summarizeThreadFeature,
                   classifyIntentFeature,
@@ -100,9 +100,9 @@ object Main extends IOApp.Simple:
                   classifyRegisterFeature
                 )
             profileService          =
-                ProfileServiceImpl(profileRepo, ollamaService, config.profileServiceConfig)
-            llm                    <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
-            mediaRelay              = MediaRelayFunctionalityImpl(MediaRelayServiceImpl())
+                ProfileService(profileRepo, ollamaService, config.profileServiceConfig)
+            llm                    <- LlmFunctionality(profileService, config.llmConfig)
+            mediaRelay              = MediaRelayFunctionality(MediaRelayService())
             _                      <- IO.println("Ready")
         yield List(
           meme.triggerMemeScenario

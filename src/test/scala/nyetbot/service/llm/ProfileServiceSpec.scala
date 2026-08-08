@@ -11,6 +11,8 @@ import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserId
 import nyetbot.model.UserRef
 import nyetbot.repo.ProfileRepoInMemory
+import nyetbot.service.llm.LlmService.*
+import nyetbot.service.llm.ProfileService.*
 
 class ProfileServiceSpec extends CatsEffectSuite:
 
@@ -51,10 +53,10 @@ class ProfileServiceSpec extends CatsEffectSuite:
     private val target = UserRef(UserId(42L), DisplayName("Гоша"))
     private val chat   = List(LlmContextMessage(Some(UserId(42L)), "Гоша", "казино хуже"))
 
-    private def mkService(repo: ProfileRepoInMemory, llm: LlmService): IO[ProfileServiceImpl] =
+    private def mkService(repo: ProfileRepoInMemory, llm: LlmService): IO[ProfileService] =
         Random
             .scalaUtilRandom[IO]
-            .map(r => ProfileServiceImpl(repo, llm, Fixtures.profileServiceConfig)(using r))
+            .map(r => ProfileService(repo, llm, Fixtures.profileServiceConfig)(using r))
 
     test(
       "random trigger skips intent classification but enriches the reply with topic and register"

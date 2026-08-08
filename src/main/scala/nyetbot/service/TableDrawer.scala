@@ -4,9 +4,6 @@ import cats.MonadThrow
 import cats.implicits.toFlatMapOps
 import cats.implicits.toFunctorOps
 
-case class NoHeaderRow(e: String)                                 extends Exception
-case class OneOrMoreTableRowsDoNotMatchNumberOfColumns(e: String) extends Exception
-
 sealed abstract case class TableDrawer private (table: List[List[String]]):
     def buildTable: String =
         val headerRow                           = table.head
@@ -32,6 +29,10 @@ sealed abstract case class TableDrawer private (table: List[List[String]]):
         """<code>""" + buildTable + """</code>"""
 
 object TableDrawer:
+    case class NoHeaderRow(e: String) extends Exception
+
+    case class OneOrMoreTableRowsDoNotMatchNumberOfColumns(e: String) extends Exception
+
     def create[F[_]: MonadThrow](numberOfColumns: Int, table: List[List[String]]): F[TableDrawer] =
         val checkHeaderExists              =
             if table.size > 0

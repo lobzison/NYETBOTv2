@@ -5,7 +5,7 @@ import nyetbot.client.OllamaClient
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.ReplyFeatureConfig
 import nyetbot.model.LlmContextMessage
-import nyetbot.service.llm.{Register, ReplyContext, TagIntent}
+import nyetbot.service.llm.LlmService.{Register, ReplyContext, TagIntent}
 
 trait ReplyFeature:
     def generateReply(ctx: ReplyContext): IO[String]
@@ -16,65 +16,59 @@ object ReplyFeature:
         config: ReplyFeatureConfig,
         llmConfig: LlmFunctionalityConfig
     ): ReplyFeature =
-        new ReplyFeatureImpl(client, config, llmConfig)
+        new ReplyFeature:
+            private val request = OllamaClient.Req.from(config.modelConfig)
 
-class ReplyFeatureImpl(
-    client: OllamaClient,
-    config: ReplyFeatureConfig,
-    llmConfig: LlmFunctionalityConfig
-) extends ReplyFeature:
-    private val request = OllamaClient.Req.from(config.modelConfig)
+            override def generateReply(ctx: ReplyContext): IO[String] =
+                client.generate(request.copy(prompt = Prompt.render(ctx, llmConfig)))
 
-    override def generateReply(ctx: ReplyContext): IO[String] =
-        client.generate(request.copy(prompt = ReplyFeaturePrompt.render(ctx, llmConfig)))
+    object Prompt:
+        private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
+            chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
 
-object ReplyFeaturePrompt:
-    private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
-        chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
+        private def registerLine(register: Register): String = register match
+            case Register.Spor    =>
+                "Это спорный тейк: найди слабое место, переверни его же слова, вызови на ответ."
+            case Register.Sobytie =>
+                "Это личное событие или поздравление: НЕ доёбывайся до человека. Поучаствуй " +
+                    "по-своему — циничное поздравление, мрачный тост или едкий прогноз на будущее."
+            case Register.Shutka  =>
+                "Это шутка или мем: подхвати и докрути шутку в своём стиле, не разваливай её наездом."
+            case Register.Vopros  =>
+                "Это вопрос или обращение: ответь по существу, со своим мнением и лёгким подколом."
+            case Register.Byt     =>
+                "Это бытовая болтовня: вбрось свой тейк по теме как участник, без наезда на человека."
 
-    private def registerLine(register: Register): String = register match
-        case Register.Spor    =>
-            "Это спорный тейк: найди слабое место, переверни его же слова, вызови на ответ."
-        case Register.Sobytie =>
-            "Это личное событие или поздравление: НЕ доёбывайся до человека. Поучаствуй " +
-                "по-своему — циничное поздравление, мрачный тост или едкий прогноз на будущее."
-        case Register.Shutka  =>
-            "Это шутка или мем: подхвати и докрути шутку в своём стиле, не разваливай её наездом."
-        case Register.Vopros  =>
-            "Это вопрос или обращение: ответь по существу, со своим мнением и лёгким подколом."
-        case Register.Byt     =>
-            "Это бытовая болтовня: вбрось свой тейк по теме как участник, без наезда на человека."
-
-    def render(ctx: ReplyContext, cfg: LlmFunctionalityConfig): String =
-        val intentLine          = ctx.intent match
-            case TagIntent.Contextual  =>
-                "Тебя дёрнули внутри уже идущего спора — отвечай в контексте нити."
-            case TagIntent.NewQuestion =>
-                "Тебя дёрнули с новым, отдельным вопросом — отвечай именно на него, старьё не тащи."
-        val dossier             = if ctx.profile.isEmpty then "нет данных, новичок" else ctx.profile
-        val topicBlock          =
-            if ctx.topic.isEmpty then ""
-            else s"""
+        def render(ctx: ReplyContext, cfg: LlmFunctionalityConfig): String =
+            val intentLine          = ctx.intent match
+                case TagIntent.Contextual  =>
+                    "Тебя дёрнули внутри уже идущего спора — отвечай в контексте нити."
+                case TagIntent.NewQuestion =>
+                    "Тебя дёрнули с новым, отдельным вопросом — отвечай именно на него, старьё не тащи."
+            val dossier             = if ctx.profile.isEmpty then "нет данных, новичок" else ctx.profile
+            val topicBlock          =
+                if ctx.topic.isEmpty then ""
+                else s"""
 [СУТЬ ОБСУЖДЕНИЯ]
 ${ctx.topic}
 """
-        val replyToBlock        =
-            if ctx.replyToText.isEmpty then ""
-            else
-                val marker =
-                    if ctx.replyToBot then
-                        "(это ТВОЁ прошлое сообщение — собеседник отвечает тебе)\n"
-                    else ""
-                s"""
+            val replyToBlock        =
+                if ctx.replyToText.isEmpty then ""
+                else
+                    val marker =
+                        if ctx.replyToBot then
+                            "(это ТВОЁ прошлое сообщение — собеседник отвечает тебе)\n"
+                        else ""
+                    s"""
 [НА ЧТО ОН ОТВЕЧАЕТ]
 $marker${ctx.replyToText}
 """
-        val replyToBotDirective =
-            if ctx.replyToBot then
-                """
+            val replyToBotDirective =
+                if ctx.replyToBot then
+                    """
 Собеседник ответил на твоё сообщение: отстаивай или докручивай свою позицию, отвечай именно на его возражение и не повторяй уже сказанное тобой."""
-            else ""
-        s"""[ДОСЬЕ НА СОБЕСЕДНИКА]
+                else ""
+            s"""[ДОСЬЕ НА СОБЕСЕДНИКА]
 Кого разносишь: ${ctx.target.displayName}
 Его давнее досье (как вёл себя раньше): $dossier
 Его свежие замашки (по последним сообщениям): ${ctx.recentSummary}

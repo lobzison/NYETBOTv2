@@ -5,7 +5,7 @@ import cats.effect.IO
 import munit.CatsEffectSuite
 
 class MediaRelayServiceSpec extends CatsEffectSuite:
-    private val service = MediaRelayServiceImpl()
+    private val service = MediaRelayService()
 
     private def textLinks(io: IO[List[MessageContent[?]]]): IO[List[String]] =
         io.map(_.collect { case TextContent(text, _, _) => text })

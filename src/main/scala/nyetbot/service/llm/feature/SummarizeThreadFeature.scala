@@ -15,26 +15,20 @@ object SummarizeThreadFeature:
         config: SummarizeThreadFeatureConfig,
         llmConfig: LlmFunctionalityConfig
     ): SummarizeThreadFeature =
-        new SummarizeThreadFeatureImpl(client, config, llmConfig)
+        new SummarizeThreadFeature:
+            private val request = OllamaClient.Req.from(config.modelConfig)
 
-class SummarizeThreadFeatureImpl(
-    client: OllamaClient,
-    config: SummarizeThreadFeatureConfig,
-    llmConfig: LlmFunctionalityConfig
-) extends SummarizeThreadFeature:
-    private val request = OllamaClient.Req.from(config.modelConfig)
+            override def summarizeThread(recentChat: List[LlmContextMessage]): IO[String] =
+                client.generate(
+                  request.copy(prompt = Prompt.render(recentChat, llmConfig))
+                )
 
-    override def summarizeThread(recentChat: List[LlmContextMessage]): IO[String] =
-        client.generate(
-          request.copy(prompt = SummarizeThreadFeaturePrompt.render(recentChat, llmConfig))
-        )
+    object Prompt:
+        private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
+            chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
 
-object SummarizeThreadFeaturePrompt:
-    private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
-        chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
-
-    def render(recentChat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
-        s"""Ниже фрагмент группового чата. Опиши в 2-3 предложениях, о чём сейчас идёт разговор:
+        def render(recentChat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
+            s"""Ниже фрагмент группового чата. Опиши в 2-3 предложениях, о чём сейчас идёт разговор:
 тема, что утверждают участники, ключевые детали (цифры, названия, факты). Нейтрально, без оценок.
 
 ЧАТ:
