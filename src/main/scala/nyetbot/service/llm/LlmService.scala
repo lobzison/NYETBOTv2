@@ -6,7 +6,12 @@ import io.circe.literal.json
 import nyetbot.config.OllamaConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.UserRef
-import nyetbot.service.llm.feature.{ReplyFeature, ReplyFeaturePrompt}
+import nyetbot.service.llm.feature.{
+    ReplyFeature,
+    ReplyFeaturePrompt,
+    SummarizeThreadFeature,
+    SummarizeThreadFeaturePrompt
+}
 import nyetbot.util.Text
 import org.http4s.Method.POST
 import org.http4s.Request
@@ -75,13 +80,7 @@ ${renderChat(recent, cfg)}
 СВОДКА:"""
 
     def topic(recentChat: List[LlmContextMessage], cfg: LlmConfig): String =
-        s"""Ниже фрагмент группового чата. Опиши в 2-3 предложениях, о чём сейчас идёт разговор:
-тема, что утверждают участники, ключевые детали (цифры, названия, факты). Нейтрально, без оценок.
-
-ЧАТ:
-${renderChat(recentChat, cfg)}
-
-СУТЬ:"""
+        SummarizeThreadFeaturePrompt.render(recentChat, cfg)
 
     def register(
         triggerText: String,
@@ -140,7 +139,8 @@ class OllamaService(
     client: Client[IO],
     config: OllamaConfig,
     llmConfig: LlmConfig,
-    replyFeature: ReplyFeature
+    replyFeature: ReplyFeature,
+    summarizeThreadFeature: SummarizeThreadFeature
 ) extends LlmService:
 
     private def complete(
@@ -176,12 +176,7 @@ class OllamaService(
         ).map(Text.truncate(_, llmConfig.summaryMaxChars))
 
     override def summarizeThread(recentChat: List[LlmContextMessage]): IO[String] =
-        complete(
-          config.utilityModel,
-          OllamaPrompts.topic(recentChat, llmConfig),
-          config.topicNumPredict,
-          config.utilityTemperature
-        )
+        summarizeThreadFeature.summarizeThread(recentChat)
 
     override def rewriteProfile(
         oldProfile: String,

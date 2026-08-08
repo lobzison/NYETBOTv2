@@ -32,11 +32,11 @@ class ReplyFeatureImpl(
       options = OllamaClient.Req.Options(
         numPredict = config.numPredict,
         temperature = config.temperature,
-        topP = config.topP,
-        topK = config.topK,
-        repeatPenalty = config.repeatPenalty,
+        topP = Some(config.topP),
+        topK = Some(config.topK),
+        repeatPenalty = Some(config.repeatPenalty),
         numCtx = config.numCtx,
-        stop = config.stop
+        stop = Some(config.stop)
       )
     )
 

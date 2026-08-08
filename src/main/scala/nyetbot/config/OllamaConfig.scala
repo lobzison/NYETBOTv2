@@ -5,12 +5,12 @@ final case class OllamaConfig(
     domain: String,
     port: Int,
     reply: ReplyFeatureConfig,
+    summarizeThread: SummarizeThreadFeatureConfig,
     utilityModel: String,
     utilityTemperature: Double,
     summaryNumPredict: Int,
     rewriteNumPredict: Int,
     intentNumPredict: Int,
-    topicNumPredict: Int,
     registerNumPredict: Int,
     requestTimeoutMinutes: Int,
     idleTimeoutMinutes: Int

@@ -55,24 +55,36 @@ object Main extends IOApp.Simple:
         TelegramClient[IO]
     ): IO[List[Scenario[IO, Unit]]] =
         for
-            _                <- IO.println("Starting NYETBOTv2")
-            given Random[IO] <- Random.scalaUtilRandom[IO]
-            _                <- fly4s.migrate
-            memeRepo          = MemeRepoDB(db)
-            swearRepo         = SwearRepoImpl(db)
-            swearService     <- SwearServiceCached(swearRepo)
-            swear             = SwearFunctionalityImpl(swearService)
-            service          <- MemeServiceCached(memeRepo)
-            meme              = MemeFunctionalityImpl(service)
-            profileRepo       = ProfileRepoDB(db)
-            ollamaClient      = OllamaClient(client, Uri.unsafeFromString(config.ollamaConfig.uri))
-            replyFeature      = ReplyFeature(ollamaClient, config.ollamaConfig.reply, config.llmConfig)
-            ollamaService     =
-                OllamaService(client, config.ollamaConfig, config.llmConfig, replyFeature)
-            profileService    = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
-            llm              <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
-            mediaRelay        = MediaRelayFunctionalityImpl(MediaRelayServiceImpl())
-            _                <- IO.println("Ready")
+            _                     <- IO.println("Starting NYETBOTv2")
+            given Random[IO]      <- Random.scalaUtilRandom[IO]
+            _                     <- fly4s.migrate
+            memeRepo               = MemeRepoDB(db)
+            swearRepo              = SwearRepoImpl(db)
+            swearService          <- SwearServiceCached(swearRepo)
+            swear                  = SwearFunctionalityImpl(swearService)
+            service               <- MemeServiceCached(memeRepo)
+            meme                   = MemeFunctionalityImpl(service)
+            profileRepo            = ProfileRepoDB(db)
+            ollamaClient           = OllamaClient(client, Uri.unsafeFromString(config.ollamaConfig.uri))
+            replyFeature           = ReplyFeature(ollamaClient, config.ollamaConfig.reply, config.llmConfig)
+            summarizeThreadFeature =
+                SummarizeThreadFeature(
+                  ollamaClient,
+                  config.ollamaConfig.summarizeThread,
+                  config.llmConfig
+                )
+            ollamaService          =
+                OllamaService(
+                  client,
+                  config.ollamaConfig,
+                  config.llmConfig,
+                  replyFeature,
+                  summarizeThreadFeature
+                )
+            profileService         = ProfileServiceImpl(profileRepo, ollamaService, config.llmConfig)
+            llm                   <- LlmFunctionalityImpl.mk(profileService, config.llmConfig)
+            mediaRelay             = MediaRelayFunctionalityImpl(MediaRelayServiceImpl())
+            _                     <- IO.println("Ready")
         yield List(
           meme.triggerMemeScenario
         ) ++ meme.memeManagementScenarios ++ swear.scenarios :+ llm.reply :+ mediaRelay.scenario

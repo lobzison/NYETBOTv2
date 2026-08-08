@@ -29,11 +29,11 @@ object OllamaClient:
         case class Options(
             numPredict: Int,
             temperature: Double,
-            topP: Double,
-            topK: Int,
-            repeatPenalty: Double,
+            topP: Option[Double],
+            topK: Option[Int],
+            repeatPenalty: Option[Double],
             numCtx: Int,
-            stop: List[String]
+            stop: Option[List[String]]
         )
 
         given Encoder[Options] = ConfiguredEncoder.derived
