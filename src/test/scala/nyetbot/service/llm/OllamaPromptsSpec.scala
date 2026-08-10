@@ -4,6 +4,7 @@ import munit.FunSuite
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
 import nyetbot.service.llm.LlmFeatures.*
+import nyetbot.service.llm.LlmService.Trigger
 import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
 import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
 import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
@@ -25,8 +26,7 @@ class OllamaPromptsSpec extends FunSuite:
         minChars: Int = 200,
         trigger: String = "клава за 200 баксов",
         currentDate: String = "август 2026",
-        replyToText: String = "",
-        replyToBot: Boolean = false
+        reply: Trigger = Trigger.Random("")
     ) = ReplyContext(
       target = who,
       profile = profile,
@@ -38,8 +38,7 @@ class OllamaPromptsSpec extends FunSuite:
       minChars = minChars,
       triggerText = trigger,
       currentDate = currentDate,
-      replyToText = replyToText,
-      replyToBot = replyToBot
+      trigger = reply
     )
 
     test("reply prompt carries the participant framing and topic-first directive") {
@@ -57,7 +56,7 @@ class OllamaPromptsSpec extends FunSuite:
 
     test("reply prompt orders topic, chat, reply-to and trigger blocks") {
         val p            = OllamaPrompts.reply(
-          ctx(replyToText = "моя прошлая позиция", replyToBot = true)
+          ctx(reply = Trigger.Reply("вопрос", "моя прошлая позиция"))
         )
         val topicIndex   = p.indexOf("[СУТЬ ОБСУЖДЕНИЯ]")
         val contextIndex = p.indexOf("[КОНТЕКСТ ЧАТА]")
@@ -78,7 +77,7 @@ class OllamaPromptsSpec extends FunSuite:
       "reply prompt marks the bot message being replied to and ends with the continuation directive"
     ) {
         val p         = OllamaPrompts.reply(
-          ctx(replyToText = "моя прошлая позиция", replyToBot = true)
+          ctx(reply = Trigger.Reply("вопрос", "моя прошлая позиция"))
         )
         val directive =
             "Собеседник ответил на твоё сообщение: отстаивай или докручивай свою позицию, " +
@@ -90,14 +89,14 @@ class OllamaPromptsSpec extends FunSuite:
 
     test("ordinary reply prompt omits the bot ownership marker") {
         val p = OllamaPrompts.reply(
-          ctx(replyToText = "сообщение другого человека", replyToBot = false)
+          ctx(reply = Trigger.Tagged("вопрос", "сообщение другого человека"))
         )
         assert(p.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
         assert(!p.contains("(это ТВОЁ прошлое сообщение — собеседник отвечает тебе)"))
     }
 
     test("reply prompt omits the reply-to block when reply-to text is empty") {
-        val p = OllamaPrompts.reply(ctx(replyToText = "", replyToBot = false))
+        val p = OllamaPrompts.reply(ctx(reply = Trigger.Random("")))
         assert(!p.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
     }
 

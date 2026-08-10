@@ -85,7 +85,7 @@ class LlmServiceSpec extends CatsEffectSuite:
                        "триггер",
                        chat,
                        chat,
-                       Trigger.Tagged("эй бот", "исходное", replyToBot = false)
+                       Trigger.Tagged("эй бот", "исходное")
                      )
             seen  <- calls.get
         yield assertEquals(
@@ -153,8 +153,7 @@ class LlmServiceSpec extends CatsEffectSuite:
             captured <- contexts.get
         yield
             assertEquals(captured.size, 1)
-            assertEquals(captured.head.replyToText, "сообщение другого человека")
-            assert(!captured.head.replyToBot)
+            assertEquals(captured.head.trigger, Trigger.Random("сообщение другого человека"))
     }
 
     test("reply-to-bot details reach the reply context") {
@@ -168,13 +167,12 @@ class LlmServiceSpec extends CatsEffectSuite:
                           "возражение",
                           chat,
                           chat,
-                          Trigger.Tagged("возражение", "позиция бота", replyToBot = true)
+                          Trigger.Reply("возражение", "позиция бота")
                         )
             captured <- contexts.get
         yield
             assertEquals(captured.size, 1)
-            assertEquals(captured.head.replyToText, "позиция бота")
-            assert(captured.head.replyToBot)
+            assertEquals(captured.head.trigger, Trigger.Reply("возражение", "позиция бота"))
     }
 
     test("rewriteProfile persists a description truncated to <= 300 chars") {

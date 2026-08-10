@@ -88,9 +88,9 @@ object LlmFunctionality:
                         val target      = UserRef.fromUser(user)
                         val triggerText = msg.text.replace(config.botAlias, config.botName)
                         val trigger     =
-                            if tagged || replyToBot then
-                                Trigger.Tagged(msg.text, replyToText, replyToBot)
-                            else Trigger.Random(replyToText)
+                            if replyToBot then Trigger.Reply(msg.text, replyToText)
+                            else if tagged then Trigger.Tagged(msg.text, replyToText)
+                            else Trigger.Random(msg.text)
 
                         val produce =
                             for

@@ -30,7 +30,8 @@ trait LlmService:
 object LlmService:
     enum Trigger:
         case Random(replyToText: String)
-        case Tagged(question: String, replyToText: String, replyToBot: Boolean)
+        case Tagged(question: String, replyToText: String)
+        case Reply(question: String, replyToText: String)
 
     final case class GeneratedReply(text: String, recentSummary: String, oldProfile: String)
 
@@ -48,43 +49,41 @@ object LlmService:
                 trigger: Trigger
             ): IO[GeneratedReply] =
                 for
-                    oldProfile                       <-
+                    oldProfile <-
                         repo.getProfile(target.id).map(_.map(_.description.value).getOrElse(""))
-                    summary                          <- llm.summarizeUser(recentUserMsgs, target)
-                    topic                            <- llm
-                                                            .summarizeThread(
-                                                              recentChat.takeRight(config.topicContextWindow)
-                                                            )
-                                                            .handleError(_ => "")
-                    register                         <- llm
-                                                            .classifyRegister(triggerText, recentChat)
-                                                            .handleError(_ => Register.Byt)
-                    details                          <- trigger match
-                                                            case Trigger.Tagged(q, r, replyToBot) =>
-                                                                llm
-                                                                    .classifyTagIntent(q, r, recentChat)
-                                                                    .map((_, r, replyToBot))
-                                                            case Trigger.Random(replyToText)      =>
-                                                                IO.pure((TagIntent.Contextual, replyToText, false))
-                    (intent, replyToText, replyToBot) = details
-                    minChars                         <- targetMinChars(triggerText)
-                    date                             <- currentDate
-                    text                             <- llm.generateReply(
-                                                          ReplyContext(
-                                                            target = target,
-                                                            profile = oldProfile,
-                                                            recentSummary = summary,
-                                                            topic = topic,
-                                                            recentChat = recentChat,
-                                                            intent = intent,
-                                                            register = register,
-                                                            minChars = minChars,
-                                                            triggerText = triggerText,
-                                                            currentDate = date,
-                                                            replyToText = replyToText,
-                                                            replyToBot = replyToBot
-                                                          )
-                                                        )
+                    summary    <- llm.summarizeUser(recentUserMsgs, target)
+                    topic      <- llm
+                                      .summarizeThread(
+                                        recentChat.takeRight(config.topicContextWindow)
+                                      )
+                                      .handleError(_ => "")
+                    register   <- llm
+                                      .classifyRegister(triggerText, recentChat)
+                                      .handleError(_ => Register.Byt)
+                    intent     <- trigger match
+                                      case Trigger.Tagged(q, r) =>
+                                          llm.classifyTagIntent(q, r, recentChat)
+                                      case Trigger.Reply(q, r)  =>
+                                          llm.classifyTagIntent(q, r, recentChat)
+                                      case Trigger.Random(_)    =>
+                                          IO.pure(TagIntent.Contextual)
+                    minChars   <- targetMinChars(triggerText)
+                    date       <- currentDate
+                    text       <- llm.generateReply(
+                                    ReplyContext(
+                                      target = target,
+                                      profile = oldProfile,
+                                      recentSummary = summary,
+                                      topic = topic,
+                                      recentChat = recentChat,
+                                      intent = intent,
+                                      register = register,
+                                      minChars = minChars,
+                                      triggerText = triggerText,
+                                      currentDate = date,
+                                      trigger = trigger
+                                    )
+                                  )
                 yield GeneratedReply(text, summary, oldProfile)
 
             override def rewriteProfile(target: UserRef, gen: GeneratedReply): IO[Unit] =
