@@ -19,6 +19,12 @@ object ClassifyIntentFeature:
         case Contextual
         case NewQuestion
 
+        override def toString: String = this match
+            case Contextual  =>
+                "Тебя дёрнули внутри уже идущего спора — отвечай в контексте нити."
+            case NewQuestion =>
+                "Тебя дёрнули с новым, отдельным вопросом — отвечай именно на него, старьё не тащи."
+
     def apply(
         client: OllamaClient,
         config: ClassifyIntentFeatureConfig,

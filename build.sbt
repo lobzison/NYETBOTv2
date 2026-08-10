@@ -42,8 +42,10 @@ lazy val commonSettings = Seq(
 
 addCommandAlias(
   "runTest",
-  """set Compile / run / fork := true; set Compile / run / javaOptions
-    += "-Dconfig.resource=test.conf"; run"""
+  """set Compile / run / fork := true;
+    |set Compile / run / javaOptions += "-Dconfig.resource=test.conf";
+    |set Compile / run / javaOptions += "-Dorg.slf4j.simpleLogger.defaultLogLevel=debug";
+    |run""".stripMargin
 )
 
 lazy val core =
