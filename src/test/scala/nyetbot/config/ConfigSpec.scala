@@ -9,8 +9,6 @@ class ConfigSpec extends FunSuite:
         val root = ConfigSource.default.at("nyetbot").loadOrThrow[Config.RawConfig]
         assertEquals(root.llm.botName, "NYETBOT")
         assertEquals(root.llm.botAlias, "@nyetterbot")
-        assertEquals(root.llm.userPrefix, "")
-        assertEquals(root.llm.inputPrefix, ": ")
         assertEquals(root.llm.messageEvery, 150)
         assertEquals(root.llm.chatBufferSize, 200)
         assertEquals(root.llm.replyContextWindow, 20)

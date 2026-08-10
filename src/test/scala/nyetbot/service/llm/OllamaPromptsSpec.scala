@@ -1,7 +1,6 @@
 package nyetbot.service.llm
 
 import munit.FunSuite
-import nyetbot.Fixtures
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
 import nyetbot.service.llm.LlmFeatures.*
@@ -11,7 +10,6 @@ import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
 
 class OllamaPromptsSpec extends FunSuite:
 
-    private val cfg  = Fixtures.llmConfig
     private val who  = UserRef(UserId(42L), DisplayName("Гоша Петров"))
     private val chat = List(
       LlmContextMessage(Some(UserId(1L)), "Seb", "банки говно"),
@@ -46,8 +44,7 @@ class OllamaPromptsSpec extends FunSuite:
 
     test("reply prompt carries the participant framing and topic-first directive") {
         val p = OllamaPrompts.reply(
-          ctx(profile = "старый параноик", summary = "свежая сводка", minChars = 250),
-          cfg
+          ctx(profile = "старый параноик", summary = "свежая сводка", minChars = 250)
         )
         assert(p.contains("Гоша Петров"))
         assert(p.contains("старый параноик"))
@@ -60,8 +57,7 @@ class OllamaPromptsSpec extends FunSuite:
 
     test("reply prompt orders topic, chat, reply-to and trigger blocks") {
         val p            = OllamaPrompts.reply(
-          ctx(replyToText = "моя прошлая позиция", replyToBot = true),
-          cfg
+          ctx(replyToText = "моя прошлая позиция", replyToBot = true)
         )
         val topicIndex   = p.indexOf("[СУТЬ ОБСУЖДЕНИЯ]")
         val contextIndex = p.indexOf("[КОНТЕКСТ ЧАТА]")
@@ -73,7 +69,7 @@ class OllamaPromptsSpec extends FunSuite:
     }
 
     test("reply prompt pins the exact message being answered") {
-        val p = OllamaPrompts.reply(ctx(trigger = "уникальный-триггер-текст"), cfg)
+        val p = OllamaPrompts.reply(ctx(trigger = "уникальный-триггер-текст"))
         assert(p.contains("уникальный-триггер-текст"))
         assert(p.contains("[СООБЩЕНИЕ, НА КОТОРОЕ ОТВЕЧАЕШЬ]"))
     }
@@ -82,8 +78,7 @@ class OllamaPromptsSpec extends FunSuite:
       "reply prompt marks the bot message being replied to and ends with the continuation directive"
     ) {
         val p         = OllamaPrompts.reply(
-          ctx(replyToText = "моя прошлая позиция", replyToBot = true),
-          cfg
+          ctx(replyToText = "моя прошлая позиция", replyToBot = true)
         )
         val directive =
             "Собеседник ответил на твоё сообщение: отстаивай или докручивай свою позицию, " +
@@ -95,38 +90,37 @@ class OllamaPromptsSpec extends FunSuite:
 
     test("ordinary reply prompt omits the bot ownership marker") {
         val p = OllamaPrompts.reply(
-          ctx(replyToText = "сообщение другого человека", replyToBot = false),
-          cfg
+          ctx(replyToText = "сообщение другого человека", replyToBot = false)
         )
         assert(p.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
         assert(!p.contains("(это ТВОЁ прошлое сообщение — собеседник отвечает тебе)"))
     }
 
     test("reply prompt omits the reply-to block when reply-to text is empty") {
-        val p = OllamaPrompts.reply(ctx(replyToText = "", replyToBot = false), cfg)
+        val p = OllamaPrompts.reply(ctx(replyToText = "", replyToBot = false))
         assert(!p.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
     }
 
     test("reply prompt omits the topic block when the topic is empty") {
-        val p = OllamaPrompts.reply(ctx(topic = ""), cfg)
+        val p = OllamaPrompts.reply(ctx(topic = ""))
         assert(!p.contains("\n[СУТЬ ОБСУЖДЕНИЯ]\n"))
     }
 
     test("reply prompt includes the current date") {
-        val p = OllamaPrompts.reply(ctx(currentDate = "август 2026"), cfg)
+        val p = OllamaPrompts.reply(ctx(currentDate = "август 2026"))
         assert(p.contains("Сейчас август 2026."))
     }
 
     test("reply prompt uses the contextual intent line") {
         assert(
-          OllamaPrompts.reply(ctx(intent = TagIntent.Contextual), cfg).contains("уже идущего спора")
+          OllamaPrompts.reply(ctx(intent = TagIntent.Contextual)).contains("уже идущего спора")
         )
     }
 
     test("reply prompt uses the new-question intent line") {
         assert(
           OllamaPrompts
-              .reply(ctx(intent = TagIntent.NewQuestion), cfg)
+              .reply(ctx(intent = TagIntent.NewQuestion))
               .contains("новым, отдельным вопросом")
         )
     }
@@ -140,29 +134,29 @@ class OllamaPromptsSpec extends FunSuite:
           Register.Byt     -> "Это бытовая болтовня: вбрось свой тейк"
         )
         cases.foreach { case (register, expected) =>
-            assert(OllamaPrompts.reply(ctx(register = register), cfg).contains(expected))
+            assert(OllamaPrompts.reply(ctx(register = register)).contains(expected))
         }
     }
 
     test("empty profile renders the newcomer placeholder") {
-        assert(OllamaPrompts.reply(ctx(profile = ""), cfg).contains("нет данных, новичок"))
+        assert(OllamaPrompts.reply(ctx(profile = "")).contains("нет данных, новичок"))
     }
 
     test("summary prompt carries the char limit and ends with the cue label") {
-        val p = OllamaPrompts.summary(chat, who, cfg, 500)
+        val p = OllamaPrompts.summary(chat, who, 500)
         assert(p.contains("500"))
         assert(p.endsWith("СВОДКА:"))
     }
 
     test("topic prompt asks for the current discussion and renders chat") {
-        val p = OllamaPrompts.topic(chat, cfg)
+        val p = OllamaPrompts.topic(chat)
         assert(p.contains("Опиши в 2-3 предложениях, о чём сейчас идёт разговор"))
         assert(p.contains("Seb: банки говно"))
         assert(p.endsWith("СУТЬ:"))
     }
 
     test("register prompt lists all five options and includes the trigger") {
-        val p = OllamaPrompts.register("уникальный-триггер", chat, cfg)
+        val p = OllamaPrompts.register("уникальный-триггер", chat)
         List("SPOR", "SOBYTIE", "SHUTKA", "VOPROS", "BYT").foreach(option =>
             assert(p.contains(option))
         )
@@ -173,7 +167,7 @@ class OllamaPromptsSpec extends FunSuite:
         val longChat = (1 to 10).toList.map(i =>
             LlmContextMessage(Some(UserId(i.toLong)), s"User$i", s"message-$i")
         )
-        val p        = OllamaPrompts.register("триггер", longChat, cfg)
+        val p        = OllamaPrompts.register("триггер", longChat)
         assert(!p.contains("User1: message-1\n"))
         assert(!p.contains("User2: message-2\n"))
         assert(p.contains("message-3"))
@@ -187,13 +181,13 @@ class OllamaPromptsSpec extends FunSuite:
     }
 
     test("intent prompt lists CONTEXT and NEW and includes the reply-to text") {
-        val p = OllamaPrompts.intent("эй бот", "исходное сообщение", chat, cfg)
+        val p = OllamaPrompts.intent("эй бот", "исходное сообщение", chat)
         assert(p.contains("CONTEXT"))
         assert(p.contains("NEW"))
         assert(p.contains("исходное сообщение"))
     }
 
     test("intent prompt marks an empty reply-to") {
-        val p = OllamaPrompts.intent("эй бот", "", chat, cfg)
+        val p = OllamaPrompts.intent("эй бот", "", chat)
         assert(p.contains("может быть пустым): нет"))
     }

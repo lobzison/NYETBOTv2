@@ -1,7 +1,6 @@
 package nyetbot.service.llm
 
 import cats.effect.IO
-import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
 import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
@@ -31,26 +30,24 @@ trait LlmFeatures:
 object LlmFeatures:
 
     object OllamaPrompts:
-        def reply(ctx: ReplyContext, cfg: LlmFunctionalityConfig): String =
-            ReplyFeature.Prompt.render(ctx, cfg)
+        def reply(ctx: ReplyContext): String =
+            ReplyFeature.Prompt.render(ctx)
 
         def summary(
             recent: List[LlmContextMessage],
             who: UserRef,
-            cfg: LlmFunctionalityConfig,
             summaryMaxChars: Int
         ): String =
-            SummarizeUserFeature.Prompt.summary(recent, who, cfg, summaryMaxChars)
+            SummarizeUserFeature.Prompt.summary(recent, who, summaryMaxChars)
 
-        def topic(recentChat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
-            SummarizeThreadFeature.Prompt.render(recentChat, cfg)
+        def topic(recentChat: List[LlmContextMessage]): String =
+            SummarizeThreadFeature.Prompt.render(recentChat)
 
         def register(
             triggerText: String,
-            recentChat: List[LlmContextMessage],
-            cfg: LlmFunctionalityConfig
+            recentChat: List[LlmContextMessage]
         ): String =
-            ClassifyRegisterFeature.Prompt.render(triggerText, recentChat, cfg)
+            ClassifyRegisterFeature.Prompt.render(triggerText, recentChat)
 
         def rewrite(
             oldProfile: String,
@@ -63,10 +60,9 @@ object LlmFeatures:
         def intent(
             question: String,
             replyToText: String,
-            recentChat: List[LlmContextMessage],
-            cfg: LlmFunctionalityConfig
+            recentChat: List[LlmContextMessage]
         ): String =
-            ClassifyIntentFeature.Prompt.render(question, replyToText, recentChat, cfg)
+            ClassifyIntentFeature.Prompt.render(question, replyToText, recentChat)
 
     def apply(
         replyFeature: ReplyFeature,

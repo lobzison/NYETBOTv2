@@ -32,7 +32,7 @@ object LlmFunctionality:
             perUser <- Ref.of[IO, Map[UserId, Vector[LlmContextMessage]]](Map.empty)
         yield new LlmFunctionality:
             def ingest(msg: TextMessage): IO[Unit] =
-                val newMsg = LlmContextMessage.fromTextMessage(msg, config)
+                val newMsg = LlmContextMessage.fromTextMessage(msg)
                 for
                     _ <- context.update(m => (m :+ newMsg).takeRight(config.chatBufferSize))
                     _ <- msg.from.traverse_ { u =>

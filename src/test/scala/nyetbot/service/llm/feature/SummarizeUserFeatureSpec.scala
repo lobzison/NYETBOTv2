@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.Ref
 import io.circe.syntax.*
 import munit.CatsEffectSuite
-import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
 import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.config.llm.feature.SummarizeUserFeatureConfig
@@ -54,8 +53,7 @@ class SummarizeUserFeatureSpec extends CatsEffectSuite:
             responses <- Ref.of[IO, List[String]](List("с".repeat(600), "д".repeat(400)))
             feature    = SummarizeUserFeature(
                            RecordingClient(requests, responses),
-                           config,
-                           Fixtures.llmConfig
+                           config
                          )
             summary   <- feature.summarizeUser(chat, who)
             profile   <- feature.rewriteProfile("старое досье", "свежая сводка", who)

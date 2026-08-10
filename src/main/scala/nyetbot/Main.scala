@@ -66,30 +66,26 @@ object Main extends IOApp.Simple:
             meme                    = MemeFunctionality(service)
             profileRepo             = ProfileRepoDB(db)
             ollamaClient            = OllamaClient(client, Uri.unsafeFromString(config.ollamaConfig.uri))
-            replyFeature            = ReplyFeature(ollamaClient, config.ollamaConfig.reply, config.llmConfig)
+            replyFeature            = ReplyFeature(ollamaClient, config.ollamaConfig.reply)
             summarizeThreadFeature  =
                 SummarizeThreadFeature(
                   ollamaClient,
-                  config.ollamaConfig.summarizeThread,
-                  config.llmConfig
+                  config.ollamaConfig.summarizeThread
                 )
             classifyIntentFeature   =
                 ClassifyIntentFeature(
                   ollamaClient,
-                  config.ollamaConfig.classifyIntent,
-                  config.llmConfig
+                  config.ollamaConfig.classifyIntent
                 )
             summarizeUserFeature    =
                 SummarizeUserFeature(
                   ollamaClient,
-                  config.ollamaConfig.summarizeUser,
-                  config.llmConfig
+                  config.ollamaConfig.summarizeUser
                 )
             classifyRegisterFeature =
                 ClassifyRegisterFeature(
                   ollamaClient,
-                  config.ollamaConfig.classifyRegister,
-                  config.llmConfig
+                  config.ollamaConfig.classifyRegister
                 )
             llmFeatures             =
                 LlmFeatures(

@@ -7,8 +7,6 @@ object Fixtures:
     val llmConfig: LlmFunctionalityConfig = LlmFunctionalityConfig(
       botName = "NYETBOT",
       botAlias = "@nyetterbot",
-      userPrefix = "",
-      inputPrefix = ": ",
       messageEvery = 150,
       chatBufferSize = 200,
       replyContextWindow = 20,

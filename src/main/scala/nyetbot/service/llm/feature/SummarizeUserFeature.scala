@@ -2,7 +2,6 @@ package nyetbot.service.llm.feature
 
 import cats.effect.IO
 import nyetbot.client.OllamaClient
-import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.SummarizeUserFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
@@ -15,8 +14,7 @@ trait SummarizeUserFeature:
 object SummarizeUserFeature:
     def apply(
         client: OllamaClient,
-        config: SummarizeUserFeatureConfig,
-        llmConfig: LlmFunctionalityConfig
+        config: SummarizeUserFeatureConfig
     ): SummarizeUserFeature =
         new SummarizeUserFeature:
             private val summaryRequest = OllamaClient.Req.from(config.modelConfig)
@@ -29,7 +27,6 @@ object SummarizeUserFeature:
                         prompt = Prompt.summary(
                           recent,
                           who,
-                          llmConfig,
                           config.summaryMaxChars
                         )
                       )
@@ -55,13 +52,9 @@ object SummarizeUserFeature:
                     .map(Text.truncate(_, config.profileMaxChars))
 
     object Prompt:
-        private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
-            chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
-
         def summary(
             recent: List[LlmContextMessage],
             who: UserRef,
-            cfg: LlmFunctionalityConfig,
             summaryMaxChars: Int
         ): String =
             s"""Ниже последние сообщения пользователя ${who.displayName} из чата.
@@ -69,7 +62,7 @@ object SummarizeUserFeature:
 Только описание поведения, без ролей, без оценок, без обращений. Не больше $summaryMaxChars символов.
 
 СООБЩЕНИЯ:
-${renderChat(recent, cfg)}
+${ChatLog.render(recent)}
 
 СВОДКА:"""
 

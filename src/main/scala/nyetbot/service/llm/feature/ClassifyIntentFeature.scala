@@ -2,7 +2,6 @@ package nyetbot.service.llm.feature
 
 import cats.effect.IO
 import nyetbot.client.OllamaClient
-import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.ClassifyIntentFeatureConfig
 import nyetbot.model.LlmContextMessage
 
@@ -27,8 +26,7 @@ object ClassifyIntentFeature:
 
     def apply(
         client: OllamaClient,
-        config: ClassifyIntentFeatureConfig,
-        llmConfig: LlmFunctionalityConfig
+        config: ClassifyIntentFeatureConfig
     ): ClassifyIntentFeature =
         new ClassifyIntentFeature:
             private val request = OllamaClient.Req.from(config.modelConfig)
@@ -44,8 +42,7 @@ object ClassifyIntentFeature:
                         prompt = Prompt.render(
                           question,
                           replyToText,
-                          recentChat,
-                          llmConfig
+                          recentChat
                         )
                       )
                     )
@@ -55,21 +52,17 @@ object ClassifyIntentFeature:
                     }
 
     object Prompt:
-        private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
-            chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
-
         def render(
             question: String,
             replyToText: String,
-            recentChat: List[LlmContextMessage],
-            cfg: LlmFunctionalityConfig
+            recentChat: List[LlmContextMessage]
         ): String =
             val repliedTo = if replyToText.isEmpty then "нет" else replyToText
             s"""Определи, к чему относится обращение к боту.
 Сообщение с упоминанием бота: $question
 Сообщение, на которое это ответ (может быть пустым): $repliedTo
 Недавний контекст чата:
-${renderChat(recentChat, cfg)}
+${ChatLog.render(recentChat)}
 
 Если это продолжение уже идущего обсуждения — ответь одним словом: CONTEXT.
 Если это новый отдельный вопрос — ответь одним словом: NEW.

@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.Ref
 import io.circe.syntax.*
 import munit.CatsEffectSuite
-import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
 import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.config.llm.feature.SummarizeThreadFeatureConfig
@@ -36,7 +35,7 @@ class SummarizeThreadFeatureSpec extends CatsEffectSuite:
         for
             requests <- Ref.of[IO, List[OllamaClient.Req]](Nil)
             feature   =
-                SummarizeThreadFeature(RecordingClient(requests), config, Fixtures.llmConfig)
+                SummarizeThreadFeature(RecordingClient(requests), config)
             result   <- feature.summarizeThread(chat)
             captured <- requests.get
         yield

@@ -4,7 +4,6 @@ import canoe.models.PrivateChat
 import canoe.models.User
 import canoe.models.messages.TextMessage
 import munit.FunSuite
-import nyetbot.Fixtures
 import nyetbot.model.ProfileModels.*
 
 class LlmContextMessageSpec extends FunSuite:
@@ -22,7 +21,7 @@ class LlmContextMessageSpec extends FunSuite:
           text = "привет",
           from = Some(user(42L, "Гоша", Some("Петров"), Some("gosha")))
         )
-        val m   = LlmContextMessage.fromTextMessage(msg, Fixtures.llmConfig)
+        val m   = LlmContextMessage.fromTextMessage(msg)
         assertEquals(m.userId, Some(UserId(42L)))
         assertEquals(m.text, "привет")
         assert(m.userName.contains("Гоша"))
@@ -30,7 +29,7 @@ class LlmContextMessageSpec extends FunSuite:
 
     test("fromTextMessage falls back to 'user' when there is no sender") {
         val msg = TextMessage(messageId = 1, chat = chat, date = 0, text = "привет", from = None)
-        val m   = LlmContextMessage.fromTextMessage(msg, Fixtures.llmConfig)
+        val m   = LlmContextMessage.fromTextMessage(msg)
         assertEquals(m.userId, None)
         assertEquals(m.userName, "user")
     }

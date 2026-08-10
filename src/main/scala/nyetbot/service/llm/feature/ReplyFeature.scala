@@ -1,7 +1,6 @@
 package nyetbot.service.llm.feature
 
 import nyetbot.client.OllamaClient
-import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.ReplyFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
@@ -16,6 +15,17 @@ trait ReplyFeature:
 object ReplyFeature:
 
     private val logger = LoggerFactory.getLogger(getClass)
+
+    // final case class ReplyContext2(
+    //     target: UserRef,
+    //
+    //     intent: Option[String],
+    //     regiseter: Option[String],
+    //     threadSummary: Option[String],
+    //     userSummary: Option[String],
+    //     recentChat: List[LlmContextMessage],
+    //
+    //     )
 
     final case class ReplyContext(
         target: UserRef,
@@ -34,22 +44,18 @@ object ReplyFeature:
 
     def apply(
         client: OllamaClient,
-        config: ReplyFeatureConfig,
-        llmConfig: LlmFunctionalityConfig
+        config: ReplyFeatureConfig
     ): ReplyFeature =
         new ReplyFeature:
             private val request = OllamaClient.Req.from(config.modelConfig)
 
             override def generateReply(ctx: ReplyContext): IO[String] =
-                val prompt = Prompt.render(ctx, llmConfig)
+                val prompt = Prompt.render(ctx)
                 logger.debug("Prompt to send to LLM")
                 logger.debug(prompt)
                 client.generate(request.copy(prompt = prompt))
 
     object Prompt:
-        private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
-            chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
-
         private def section(title: String, body: String): String =
             s"[$title]\n$body"
 
@@ -68,8 +74,8 @@ object ReplyFeature:
         private def topic(ctx: ReplyContext): Option[String] =
             Option.when(ctx.topic.nonEmpty)(section("СУТЬ ОБСУЖДЕНИЯ", ctx.topic))
 
-        private def chat(ctx: ReplyContext, cfg: LlmFunctionalityConfig): Option[String] =
-            Some(section("КОНТЕКСТ ЧАТА", renderChat(ctx.recentChat, cfg)))
+        private def chat(ctx: ReplyContext): Option[String] =
+            Some(section("КОНТЕКСТ ЧАТА", ChatLog.render(ctx.recentChat)))
 
         private def replyTarget(ctx: ReplyContext): Option[String] =
             Option.when(ctx.replyToText.nonEmpty) {
@@ -81,11 +87,11 @@ object ReplyFeature:
                 section("НА ЧТО ОН ОТВЕЧАЕТ", body)
             }
 
-        private def trigger(ctx: ReplyContext, cfg: LlmFunctionalityConfig): Option[String] =
+        private def trigger(ctx: ReplyContext): Option[String] =
             Some(
               section(
                 "СООБЩЕНИЕ, НА КОТОРОЕ ОТВЕЧАЕШЬ",
-                s"${ctx.target.displayName}${cfg.inputPrefix}${ctx.triggerText}"
+                s"${ctx.target.displayName}: ${ctx.triggerText}"
               )
             )
 
@@ -115,12 +121,12 @@ ${ctx.register}
               )
             )
 
-        def render(ctx: ReplyContext, cfg: LlmFunctionalityConfig): String =
+        def render(ctx: ReplyContext): String =
             List(
               dossier(ctx),
               topic(ctx),
-              chat(ctx, cfg),
+              chat(ctx),
               replyTarget(ctx),
-              trigger(ctx, cfg),
+              trigger(ctx),
               task(ctx)
             ).flatten.mkString("\n\n")

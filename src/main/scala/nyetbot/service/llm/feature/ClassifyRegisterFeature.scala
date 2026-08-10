@@ -2,7 +2,6 @@ package nyetbot.service.llm.feature
 
 import cats.effect.IO
 import nyetbot.client.OllamaClient
-import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.ClassifyRegisterFeatureConfig
 import nyetbot.model.LlmContextMessage
 
@@ -36,8 +35,7 @@ object ClassifyRegisterFeature:
 
     def apply(
         client: OllamaClient,
-        config: ClassifyRegisterFeatureConfig,
-        llmConfig: LlmFunctionalityConfig
+        config: ClassifyRegisterFeatureConfig
     ): ClassifyRegisterFeature =
         new ClassifyRegisterFeature:
             private val request = OllamaClient.Req.from(config.modelConfig)
@@ -51,8 +49,7 @@ object ClassifyRegisterFeature:
                       request.copy(
                         prompt = Prompt.render(
                           triggerText,
-                          recentChat,
-                          llmConfig
+                          recentChat
                         )
                       )
                     )
@@ -66,18 +63,14 @@ object ClassifyRegisterFeature:
                     }
 
     object Prompt:
-        private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
-            chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
-
         def render(
             triggerText: String,
-            recentChat: List[LlmContextMessage],
-            cfg: LlmFunctionalityConfig
+            recentChat: List[LlmContextMessage]
         ): String =
             s"""Определи тип последнего сообщения в чате.
 
 Недавний контекст:
-${renderChat(recentChat.takeRight(8), cfg)}
+${ChatLog.render(recentChat.takeRight(8))}
 
 Последнее сообщение: $triggerText
 

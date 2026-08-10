@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.Ref
 import io.circe.syntax.*
 import munit.CatsEffectSuite
-import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
 import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.config.llm.feature.ReplyFeatureConfig
@@ -54,7 +53,7 @@ class ReplyFeatureSpec extends CatsEffectSuite:
     test("builds a configured request and changes only the prompt") {
         for
             requests <- Ref.of[IO, List[OllamaClient.Req]](Nil)
-            feature   = ReplyFeature(RecordingClient(requests), config, Fixtures.llmConfig)
+            feature   = ReplyFeature(RecordingClient(requests), config)
             result   <- feature.generateReply(context)
             captured <- requests.get
         yield

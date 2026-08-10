@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.Ref
 import io.circe.syntax.*
 import munit.CatsEffectSuite
-import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
 import nyetbot.config.llm.feature.ClassifyIntentFeatureConfig
 import nyetbot.config.llm.feature.OllamaModelConfig
@@ -42,8 +41,7 @@ class ClassifyIntentFeatureSpec extends CatsEffectSuite:
             feature   =
                 ClassifyIntentFeature(
                   RecordingClient(requests, "NEW"),
-                  config,
-                  Fixtures.llmConfig
+                  config
                 )
             result   <- feature.classifyIntent("эй бот, что с банками?", "", chat)
             captured <- requests.get
@@ -79,8 +77,7 @@ class ClassifyIntentFeatureSpec extends CatsEffectSuite:
             feature   =
                 ClassifyIntentFeature(
                   RecordingClient(requests, "CONTEXT"),
-                  config,
-                  Fixtures.llmConfig
+                  config
                 )
             result   <- feature.classifyIntent("продолжение", "предыдущее сообщение", chat)
         yield assertEquals(result, TagIntent.Contextual)

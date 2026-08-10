@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.Ref
 import io.circe.syntax.*
 import munit.CatsEffectSuite
-import nyetbot.Fixtures
 import nyetbot.client.OllamaClient
 import nyetbot.config.llm.feature.ClassifyRegisterFeatureConfig
 import nyetbot.config.llm.feature.OllamaModelConfig
@@ -41,8 +40,7 @@ class ClassifyRegisterFeatureSpec extends CatsEffectSuite:
             feature   =
                 ClassifyRegisterFeature(
                   RecordingClient(requests, "SPOR"),
-                  config,
-                  Fixtures.llmConfig
+                  config
                 )
             result   <- feature.classifyRegister("уникальный-триггер", chat)
             captured <- requests.get
@@ -78,8 +76,7 @@ class ClassifyRegisterFeatureSpec extends CatsEffectSuite:
             feature   =
                 ClassifyRegisterFeature(
                   RecordingClient(requests, "неизвестно"),
-                  config,
-                  Fixtures.llmConfig
+                  config
                 )
             result   <- feature.classifyRegister("сообщение", chat)
         yield assertEquals(result, Register.Byt)

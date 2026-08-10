@@ -2,7 +2,6 @@ package nyetbot.service.llm.feature
 
 import cats.effect.IO
 import nyetbot.client.OllamaClient
-import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.config.llm.feature.SummarizeThreadFeatureConfig
 import nyetbot.model.LlmContextMessage
 
@@ -12,26 +11,22 @@ trait SummarizeThreadFeature:
 object SummarizeThreadFeature:
     def apply(
         client: OllamaClient,
-        config: SummarizeThreadFeatureConfig,
-        llmConfig: LlmFunctionalityConfig
+        config: SummarizeThreadFeatureConfig
     ): SummarizeThreadFeature =
         new SummarizeThreadFeature:
             private val request = OllamaClient.Req.from(config.modelConfig)
 
             override def summarizeThread(recentChat: List[LlmContextMessage]): IO[String] =
                 client.generate(
-                  request.copy(prompt = Prompt.render(recentChat, llmConfig))
+                  request.copy(prompt = Prompt.render(recentChat))
                 )
 
     object Prompt:
-        private def renderChat(chat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
-            chat.map(m => s"${m.userName}${cfg.inputPrefix}${m.text}").mkString("\n")
-
-        def render(recentChat: List[LlmContextMessage], cfg: LlmFunctionalityConfig): String =
+        def render(recentChat: List[LlmContextMessage]): String =
             s"""Ниже фрагмент группового чата. Опиши в 2-3 предложениях, о чём сейчас идёт разговор:
 тема, что утверждают участники, ключевые детали (цифры, названия, факты). Нейтрально, без оценок.
 
 ЧАТ:
-${renderChat(recentChat, cfg)}
+${ChatLog.render(recentChat)}
 
 СУТЬ:"""
