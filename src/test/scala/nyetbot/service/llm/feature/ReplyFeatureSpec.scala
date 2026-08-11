@@ -7,11 +7,7 @@ import munit.CatsEffectSuite
 import nyetbot.client.OllamaClient
 import nyetbot.config.llm.feature.OllamaModelConfig
 import nyetbot.config.llm.feature.ReplyFeatureConfig
-import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
-import nyetbot.service.llm.LlmService.Trigger
-import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
-import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
 import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
 
 class ReplyFeatureSpec extends CatsEffectSuite:
@@ -33,17 +29,9 @@ class ReplyFeatureSpec extends CatsEffectSuite:
     )
 
     private val context = ReplyContext(
-      target = UserRef(UserId(42L), DisplayName("Гоша")),
-      profile = "старый профиль",
-      recentSummary = "свежая сводка",
-      topic = "тема",
-      recentChat = List(LlmContextMessage(Some(UserId(42L)), "Гоша", "сообщение")),
-      intent = TagIntent.Contextual,
-      register = Register.Byt,
-      minChars = 200,
-      triggerText = "триггер",
-      currentDate = "август 2026",
-      trigger = Trigger.Random("")
+      blocks = List(
+        ReplyBlocks.userTrigger(UserRef(UserId(42L), DisplayName("Гоша")), "триггер")
+      )
     )
 
     private class RecordingClient(ref: Ref[IO, List[OllamaClient.Req]]) extends OllamaClient:

@@ -1,13 +1,14 @@
 package nyetbot.service.llm
 
 import munit.FunSuite
+import nyetbot.config.llm.feature.OllamaModelConfig
+import nyetbot.config.llm.feature.ReplyFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
 import nyetbot.service.llm.LlmFeatures.*
 import nyetbot.service.llm.LlmService.Trigger
 import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
 import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
-import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
 
 class OllamaPromptsSpec extends FunSuite:
 
@@ -17,34 +18,39 @@ class OllamaPromptsSpec extends FunSuite:
       LlmContextMessage(Some(UserId(42L)), "Гоша", "казино хуже")
     )
 
-    private def ctx(
+    private val config = ReplyFeatureConfig(modelConfig = OllamaModelConfig(model = "test"))
+
+    private def assemble(
         profile: String = "",
-        summary: String = "s",
-        topic: String = "банки и казино устроены против людей",
+        summary: String = "свежая сводка",
+        topic: String = "суть обсуждения",
         intent: TagIntent = TagIntent.Contextual,
         register: Register = Register.Byt,
         minChars: Int = 200,
         trigger: String = "клава за 200 баксов",
         currentDate: String = "август 2026",
-        reply: Trigger = Trigger.Random("")
-    ) = ReplyContext(
-      target = who,
-      profile = profile,
-      recentSummary = summary,
-      topic = topic,
-      recentChat = chat,
-      intent = intent,
-      register = register,
-      minChars = minChars,
-      triggerText = trigger,
-      currentDate = currentDate,
-      trigger = reply
-    )
+        reply: Trigger = Trigger.Random(""),
+        recentChat: List[LlmContextMessage] = chat,
+        cfg: ReplyFeatureConfig = config
+    ): String =
+        val ctx = LlmFeatures.assemble(
+          cfg,
+          who,
+          trigger,
+          minChars,
+          reply,
+          profile,
+          summary,
+          topic,
+          register,
+          intent,
+          currentDate,
+          recentChat
+        )
+        ctx.blocks.mkString("\n\n")
 
     test("reply prompt carries the participant framing and topic-first directive") {
-        val p = OllamaPrompts.reply(
-          ctx(profile = "старый параноик", summary = "свежая сводка", minChars = 250)
-        )
+        val p = assemble(profile = "старый параноик", summary = "свежая сводка", minChars = 250)
         assert(p.contains("Гоша Петров"))
         assert(p.contains("старый параноик"))
         assert(p.contains("свежая сводка"))
@@ -55,9 +61,7 @@ class OllamaPromptsSpec extends FunSuite:
     }
 
     test("reply prompt orders topic, chat, reply-to and trigger blocks") {
-        val p            = OllamaPrompts.reply(
-          ctx(reply = Trigger.Reply("вопрос", "моя прошлая позиция"))
-        )
+        val p            = assemble(reply = Trigger.Reply("вопрос", "моя прошлая позиция"))
         val topicIndex   = p.indexOf("[СУТЬ ОБСУЖДЕНИЯ]")
         val contextIndex = p.indexOf("[КОНТЕКСТ ЧАТА]")
         val replyToIndex = p.indexOf("[НА ЧТО ОН ОТВЕЧАЕТ]")
@@ -68,7 +72,7 @@ class OllamaPromptsSpec extends FunSuite:
     }
 
     test("reply prompt pins the exact message being answered") {
-        val p = OllamaPrompts.reply(ctx(trigger = "уникальный-триггер-текст"))
+        val p = assemble(trigger = "уникальный-триггер-текст")
         assert(p.contains("уникальный-триггер-текст"))
         assert(p.contains("[СООБЩЕНИЕ, НА КОТОРОЕ ОТВЕЧАЕШЬ]"))
     }
@@ -76,50 +80,64 @@ class OllamaPromptsSpec extends FunSuite:
     test(
       "reply prompt marks the bot message being replied to and ends with the continuation directive"
     ) {
-        val p         = OllamaPrompts.reply(
-          ctx(reply = Trigger.Reply("вопрос", "моя прошлая позиция"))
-        )
+        val p         = assemble(reply = Trigger.Reply("вопрос", "моя прошлая позиция"))
         val directive =
-            "Собеседник ответил на твоё сообщение: отстаивай или докручивай свою позицию, " +
-                "отвечай именно на его возражение и не повторяй уже сказанное тобой."
+            "Собеседник ответил на твоё сообщение: отстаивай или докручивай свою позицию, отвечай " +
+                "именно на его возражение и не повторяй уже сказанное тобой."
         assert(p.contains("(это ТВОЁ прошлое сообщение — собеседник отвечает тебе)"))
         assert(p.contains("моя прошлая позиция"))
         assert(p.endsWith(directive))
     }
 
     test("ordinary reply prompt omits the bot ownership marker") {
-        val p = OllamaPrompts.reply(
-          ctx(reply = Trigger.Tagged("вопрос", "сообщение другого человека"))
-        )
+        val p = assemble(reply = Trigger.Tagged("вопрос", "сообщение другого человека"))
         assert(p.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
         assert(!p.contains("(это ТВОЁ прошлое сообщение — собеседник отвечает тебе)"))
     }
 
     test("reply prompt omits the reply-to block when reply-to text is empty") {
-        val p = OllamaPrompts.reply(ctx(reply = Trigger.Random("")))
+        val p = assemble(reply = Trigger.Random(""))
         assert(!p.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
     }
 
     test("reply prompt omits the topic block when the topic is empty") {
-        val p = OllamaPrompts.reply(ctx(topic = ""))
+        val p = assemble(topic = "")
         assert(!p.contains("\n[СУТЬ ОБСУЖДЕНИЯ]\n"))
     }
 
     test("reply prompt includes the current date") {
-        val p = OllamaPrompts.reply(ctx(currentDate = "август 2026"))
+        val p = assemble(currentDate = "август 2026")
         assert(p.contains("Сейчас август 2026."))
+    }
+
+    test("disabling the whole feature yields an empty prompt") {
+        assertEquals(assemble(cfg = config.copy(enabled = false)), "")
+    }
+
+    test("disabling chat omits the chat block") {
+        val p = assemble(cfg = config.copy(chat = false))
+        assert(!p.contains("Seb: банки говно"))
+    }
+
+    test("disabling date omits the date line") {
+        val p = assemble(cfg = config.copy(date = false), currentDate = "август 2026")
+        assert(!p.contains("Сейчас август 2026."))
+    }
+
+    test("disabling topic omits the topic block") {
+        val p = assemble(cfg = config.copy(topic = false))
+        assert(!p.contains("\n[СУТЬ ОБСУЖДЕНИЯ]\n"))
     }
 
     test("reply prompt uses the contextual intent line") {
         assert(
-          OllamaPrompts.reply(ctx(intent = TagIntent.Contextual)).contains("уже идущего спора")
+          assemble(intent = TagIntent.Contextual).contains("уже идущего спора")
         )
     }
 
     test("reply prompt uses the new-question intent line") {
         assert(
-          OllamaPrompts
-              .reply(ctx(intent = TagIntent.NewQuestion))
+          assemble(intent = TagIntent.NewQuestion)
               .contains("новым, отдельным вопросом")
         )
     }
@@ -133,12 +151,12 @@ class OllamaPromptsSpec extends FunSuite:
           Register.Byt     -> "Это бытовая болтовня: вбрось свой тейк"
         )
         cases.foreach { case (register, expected) =>
-            assert(OllamaPrompts.reply(ctx(register = register)).contains(expected))
+            assert(assemble(register = register).contains(expected))
         }
     }
 
     test("empty profile renders the newcomer placeholder") {
-        assert(OllamaPrompts.reply(ctx(profile = "")).contains("нет данных, новичок"))
+        assert(assemble(profile = "").contains("нет данных, новичок"))
     }
 
     test("summary prompt carries the char limit and ends with the cue label") {

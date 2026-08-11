@@ -6,12 +6,15 @@ import cats.effect.std.Random
 import io.github.iltotore.iron.*
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
+import nyetbot.config.llm.feature.OllamaModelConfig
+import nyetbot.config.llm.feature.ReplyFeatureConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
 import nyetbot.repo.ProfileRepoInMemory
 import nyetbot.service.llm.LlmService.*
 import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
 import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
+import nyetbot.service.llm.feature.ReplyBlocks
 import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
 
 class LlmServiceSpec extends CatsEffectSuite:
@@ -30,6 +33,33 @@ class LlmServiceSpec extends CatsEffectSuite:
                     case Some(contexts) => contexts.update(_ :+ ctx).as("шиза-ответ")
                     case None           => IO.pure("шиза-ответ")
             }
+        def assembleReply(
+            target: UserRef,
+            triggerText: String,
+            minChars: Int,
+            trigger: LlmService.Trigger,
+            oldProfile: String,
+            summary: String,
+            topic: String,
+            register: Register,
+            intent: TagIntent,
+            date: String,
+            recentChat: List[LlmContextMessage]
+        ): ReplyContext =
+            LlmFeatures.assemble(
+              ReplyFeatureConfig(modelConfig = OllamaModelConfig(model = "test")),
+              target,
+              triggerText,
+              minChars,
+              trigger,
+              oldProfile,
+              summary,
+              topic,
+              register,
+              intent,
+              date,
+              recentChat
+            )
         def summarizeUser(recent: List[LlmContextMessage], who: UserRef): IO[String]            =
             calls.update(_ :+ "summarizeUser").as("свежая сводка")
         def summarizeThread(recentChat: List[LlmContextMessage]): IO[String]                    =
@@ -133,8 +163,10 @@ class LlmServiceSpec extends CatsEffectSuite:
         yield
             assertEquals(gen.text, "шиза-ответ")
             assertEquals(captured.size, 1)
-            assertEquals(captured.head.topic, "")
-            assertEquals(captured.head.register, Register.Byt)
+            val prompt = ReplyBlocks.render(captured.head.blocks)
+            assert(!prompt.contains("\n[СУТЬ ОБСУЖДЕНИЯ]\n"))
+            assert(prompt.contains("[ЗАДАЧА]"))
+            assert(prompt.contains("Это бытовая болтовня"))
     }
 
     test("random trigger forwards ordinary reply-to text without marking it as the bot") {
@@ -153,7 +185,10 @@ class LlmServiceSpec extends CatsEffectSuite:
             captured <- contexts.get
         yield
             assertEquals(captured.size, 1)
-            assertEquals(captured.head.trigger, Trigger.Random("сообщение другого человека"))
+            val prompt = ReplyBlocks.render(captured.head.blocks)
+            assert(prompt.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
+            assert(prompt.contains("сообщение другого человека"))
+            assert(!prompt.contains("(это ТВОЁ прошлое сообщение"))
     }
 
     test("reply-to-bot details reach the reply context") {
@@ -172,7 +207,10 @@ class LlmServiceSpec extends CatsEffectSuite:
             captured <- contexts.get
         yield
             assertEquals(captured.size, 1)
-            assertEquals(captured.head.trigger, Trigger.Reply("возражение", "позиция бота"))
+            val prompt = ReplyBlocks.render(captured.head.blocks)
+            assert(prompt.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
+            assert(prompt.contains("позиция бота"))
+            assert(prompt.contains("(это ТВОЁ прошлое сообщение"))
     }
 
     test("rewriteProfile persists a description truncated to <= 300 chars") {

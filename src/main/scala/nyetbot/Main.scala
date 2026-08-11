@@ -93,7 +93,8 @@ object Main extends IOApp.Simple:
                   summarizeThreadFeature,
                   classifyIntentFeature,
                   summarizeUserFeature,
-                  classifyRegisterFeature
+                  classifyRegisterFeature,
+                  config.ollamaConfig.reply
                 )
             llmService              =
                 LlmService(profileRepo, llmFeatures, config.profileServiceConfig)

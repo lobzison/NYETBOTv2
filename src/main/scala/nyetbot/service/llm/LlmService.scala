@@ -8,7 +8,6 @@ import nyetbot.config.ProfileServiceConfig
 import nyetbot.model.LlmContextMessage
 import nyetbot.model.ProfileModels.*
 import nyetbot.repo.ProfileRepo
-import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
 import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
 import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
 
@@ -69,21 +68,20 @@ object LlmService:
                                           IO.pure(TagIntent.Contextual)
                     minChars   <- targetMinChars(triggerText)
                     date       <- currentDate
-                    text       <- llm.generateReply(
-                                    ReplyContext(
-                                      target = target,
-                                      profile = oldProfile,
-                                      recentSummary = summary,
-                                      topic = topic,
-                                      recentChat = recentChat,
-                                      intent = intent,
-                                      register = register,
-                                      minChars = minChars,
-                                      triggerText = triggerText,
-                                      currentDate = date,
-                                      trigger = trigger
-                                    )
+                    ctx         = llm.assembleReply(
+                                    target,
+                                    triggerText,
+                                    minChars,
+                                    trigger,
+                                    oldProfile,
+                                    summary,
+                                    topic,
+                                    register,
+                                    intent,
+                                    date,
+                                    recentChat
                                   )
+                    text       <- llm.generateReply(ctx)
                 yield GeneratedReply(text, summary, oldProfile)
 
             override def rewriteProfile(target: UserRef, gen: GeneratedReply): IO[Unit] =
