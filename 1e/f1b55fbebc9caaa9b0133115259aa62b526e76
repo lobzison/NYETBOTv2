@@ -1,0 +1,128 @@
+src/test/scala/nyetbot/service/llm/context/TopicFeatureSpec.scala
+  s_84b6d3bfe036d1::t_48dce113b0e242 1-109
+src/main/scala/nyetbot/config/ReplyLengthConfig.scala
+  s_84b6d3bfe036d1::t_38c39cb47043b2 1-10
+src/main/scala/nyetbot/service/llm/context/IntentFeature.scala
+  s_84b6d3bfe036d1::t_b43dd365c4a448 1-52
+src/main/scala/nyetbot/service/llm/context/ContextFeatures.scala
+  s_84b6d3bfe036d1::t_1e9a1f42a03159 1-21
+src/test/scala/nyetbot/config/ConfigSpec.scala
+  s_84b6d3bfe036d1::t_fd9825001d7259 10,17-20,22-23,41-62
+  s_84b6d3bfe036d1::t_1fb3391e43b9fa 13
+  s_84b6d3bfe036d1::t_82ce854c0d07be 9
+src/main/scala/nyetbot/service/llm/ReplyInputs.scala
+  s_84b6d3bfe036d1::t_f17eca9ecf02c8 1-12
+src/main/resources/features/ollama-topic.conf
+  s_84b6d3bfe036d1::t_f82977128e189d 1-16
+src/main/scala/nyetbot/client/OllamaClient.scala
+  s_84b6d3bfe036d1::t_27b4ebc449bda6 7
+src/main/resources/features/ollama-profile-rewrite.conf
+  s_84b6d3bfe036d1::t_6b34e4cba07fec 1-13
+src/main/scala/nyetbot/config/llm/OllamaModelConfig.scala
+  s_84b6d3bfe036d1::t_7fcea6429b971e 1-17
+src/main/scala/nyetbot/service/llm/context/RegisterFeature.scala
+  s_84b6d3bfe036d1::t_f3117b5b3da5ed 1-49
+src/main/scala/nyetbot/service/llm/context/UserTriggerFeature.scala
+  s_84b6d3bfe036d1::t_9110e055462e40 1-13
+src/test/scala/nyetbot/Fixtures.scala
+  s_84b6d3bfe036d1::t_e5f98e54b91e3a 4,16
+src/test/scala/nyetbot/service/llm/context/RegisterFeatureSpec.scala
+  s_84b6d3bfe036d1::t_15dfe2eb4acd5b 1-83
+src/main/scala/nyetbot/functionality/LlmFunctionality.scala
+  s_84b6d3bfe036d1::t_05af6d2a789e1d 24,102-109,119,126
+src/main/scala/nyetbot/config/Config.scala
+  s_84b6d3bfe036d1::t_9a513896002c61 14,23,38
+src/test/scala/nyetbot/service/llm/ReplyPromptSpec.scala
+  s_84b6d3bfe036d1::t_42524ad2cc916f 116-117
+  s_84b6d3bfe036d1::t_82ce854c0d07be 31-33
+  s_84b6d3bfe036d1::t_31073714fd9554 1-30,34-115,118-154
+src/test/scala/nyetbot/service/llm/context/IntentFeatureSpec.scala
+  s_84b6d3bfe036d1::t_72be7309e76cc8 1-95
+src/main/scala/nyetbot/config/llm/ContextConfig.scala
+  s_84b6d3bfe036d1::t_375a24cbcd26f5 1-38
+src/test/scala/nyetbot/service/llm/ReplyGeneratorSpec.scala
+  s_84b6d3bfe036d1::t_8225f60c9f398a 1-81
+src/test/scala/nyetbot/service/llm/context/ContextFeatureSpec.scala
+  s_84b6d3bfe036d1::t_b8235f4d7143b0 1-54
+src/main/scala/nyetbot/config/llm/ReplyGeneratorConfig.scala
+  s_84b6d3bfe036d1::t_092bf64304eac0 1-5
+src/main/scala/nyetbot/model/LlmContextMessage.scala
+  s_84b6d3bfe036d1::t_6ab568d88c0b8f 14-16
+src/main/scala/nyetbot/service/llm/context/DossierFeature.scala
+  s_84b6d3bfe036d1::t_f1a52def6cac8e 1-61
+src/main/resources/features/ollama-intent.conf
+  s_84b6d3bfe036d1::t_071c06effdc650 1-15
+src/main/scala/nyetbot/config/OllamaConfig.scala
+  s_84b6d3bfe036d1::t_71755bd8e5381b 3,9-11
+src/main/scala/nyetbot/service/llm/LlmService.scala
+  s_84b6d3bfe036d1::t_14c1ed2e073b67 5-8,11-12,20,23-26,29,31-56
+src/main/scala/nyetbot/service/llm/context/ChatLogFeature.scala
+  s_84b6d3bfe036d1::t_f3fd1342fbb80c 1-16
+src/test/scala/nyetbot/service/llm/LlmServiceSpec.scala
+  s_84b6d3bfe036d1::t_82ce854c0d07be 44-48,79-81
+  s_84b6d3bfe036d1::t_9f5f1bd903544e 9,12-21,25-30,32-35,37-43,49-64,66-76,83,85-94,97,100-109,113,117-121,123,127-137,140,144-148,150,153-163,166,170-174,176-178,181,183-193
+src/test/scala/nyetbot/service/llm/context/BlockFeaturesSpec.scala
+  s_84b6d3bfe036d1::t_f940a7c2490417 67
+  s_84b6d3bfe036d1::t_ef7ff23744b88a 1-66,68-83
+src/main/scala/nyetbot/service/llm/context/TopicFeature.scala
+  s_84b6d3bfe036d1::t_5140bbffda1a75 1-34
+src/main/scala/nyetbot/service/llm/ProfileRewriter.scala
+  s_84b6d3bfe036d1::t_8e394212177785 61
+  s_84b6d3bfe036d1::t_553642aaa8b84c 1-51,53-60,62-63
+  s_84b6d3bfe036d1::t_0eeb36efcae99a 52
+src/main/scala/nyetbot/Main.scala
+  s_84b6d3bfe036d1::t_39a6f05709be11 16
+  s_84b6d3bfe036d1::t_202d176a189a7d 86
+  s_84b6d3bfe036d1::t_82ce854c0d07be 58-85,87-92,94-96
+src/main/scala/nyetbot/config/LlmFunctionalityConfig.scala
+  s_84b6d3bfe036d1::t_ad75db4c233a33 11-12
+src/test/scala/nyetbot/functionality/LlmFunctionalitySpec.scala
+  s_84b6d3bfe036d1::t_b5e2617ed3f7ac 13-14,22-24,26
+  s_84b6d3bfe036d1::t_2eee45af8723e7 51
+src/main/resources/features/ollama-dossier.conf
+  s_84b6d3bfe036d1::t_f5aa1f845a7c1e 1-16
+src/test/scala/nyetbot/service/llm/context/DossierFeatureSpec.scala
+  s_84b6d3bfe036d1::t_6cf1d77a786952 95
+  s_84b6d3bfe036d1::t_82ce854c0d07be 55
+  s_84b6d3bfe036d1::t_895d4195ee21d7 53
+  s_84b6d3bfe036d1::t_97c65e934d0c30 1-52,54,56-94,96-112
+src/main/scala/nyetbot/service/llm/ReplyGenerator.scala
+  s_84b6d3bfe036d1::t_66fe8e072aa8fd 74
+  s_84b6d3bfe036d1::t_735d534f6422eb 118
+  s_84b6d3bfe036d1::t_3c5b5c38507872 49-50
+  s_84b6d3bfe036d1::t_430bfce2795b35 78
+  s_84b6d3bfe036d1::t_c3ef5b7645a318 60-61
+  s_84b6d3bfe036d1::t_eceb3fea0b2aad 1-48,51-59,62-73,75-77,79-117,119-130
+src/main/scala/nyetbot/service/llm/context/ContextFeature.scala
+  s_84b6d3bfe036d1::t_4d134eef9879dd 1-22
+src/main/resources/application.conf
+  s_84b6d3bfe036d1::t_11eec85a992813 3-7,14,21-23,26-30,39-45
+src/main/resources/features/ollama-register.conf
+  s_84b6d3bfe036d1::t_f4a169cc034736 1-15
+src/test/scala/nyetbot/service/llm/ProfileRewriterSpec.scala
+  s_84b6d3bfe036d1::t_4186c3a790a677 1-44,46-60,62-78
+  s_84b6d3bfe036d1::t_1d7e5aefb66945 61
+  s_84b6d3bfe036d1::t_3461b8a5565e31 45
+src/main/scala/nyetbot/service/llm/context/ReplyTargetFeature.scala
+  s_84b6d3bfe036d1::t_6363240917a5e2 1-17
+src/main/scala/nyetbot/config/llm/ProfileRewriterConfig.scala
+  s_84b6d3bfe036d1::t_24db4610f8c414 1-8
+src/main/scala/nyetbot/service/llm/context/DateFeature.scala
+  s_84b6d3bfe036d1::t_efeb5c66b64c06 1-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "1ef1b55fbebc9caaa9b0133115259aa62b526e76",
+  "prompts": {},
+  "sessions": {
+    "s_84b6d3bfe036d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "27bf91a1-2393-417e-bea6-d672911f6d1d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Gleb Lobov <lobzison@gmail.com>"
+    }
+  }
+}
