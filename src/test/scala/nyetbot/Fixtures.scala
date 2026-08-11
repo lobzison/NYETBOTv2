@@ -1,7 +1,7 @@
 package nyetbot
 
 import nyetbot.config.LlmFunctionalityConfig
-import nyetbot.config.ProfileServiceConfig
+import nyetbot.config.ReplyLengthConfig
 
 object Fixtures:
     val llmConfig: LlmFunctionalityConfig = LlmFunctionalityConfig(
@@ -13,8 +13,7 @@ object Fixtures:
       recentUserMessages = 50
     )
 
-    val profileServiceConfig: ProfileServiceConfig = ProfileServiceConfig(
-      topicContextWindow = 10,
+    val replyLengthConfig: ReplyLengthConfig = ReplyLengthConfig(
       minChars = 150,
       meanFactor = 1.5,
       spread = 0.3,

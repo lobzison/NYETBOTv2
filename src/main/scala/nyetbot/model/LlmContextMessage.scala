@@ -11,3 +11,6 @@ object LlmContextMessage:
             .map(u => s"${u.firstName}_${u.lastName.getOrElse("")}")
             .getOrElse("user")
         LlmContextMessage(t.from.map(u => UserId(u.id)), user, t.text)
+
+    def render(chat: List[LlmContextMessage]): String =
+        chat.map(m => s"${m.userName}: ${m.text}").mkString("\n")

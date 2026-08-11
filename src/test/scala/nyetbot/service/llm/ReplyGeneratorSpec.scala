@@ -1,18 +1,20 @@
-package nyetbot.service.llm.feature
+package nyetbot.service.llm
 
 import cats.effect.IO
 import cats.effect.Ref
 import io.circe.syntax.*
 import munit.CatsEffectSuite
 import nyetbot.client.OllamaClient
-import nyetbot.config.llm.feature.OllamaModelConfig
-import nyetbot.config.llm.feature.ReplyFeatureConfig
+import nyetbot.config.llm.OllamaModelConfig
+import nyetbot.config.llm.ReplyGeneratorConfig
+import nyetbot.model.NonEmptyString
 import nyetbot.model.ProfileModels.*
-import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
+import nyetbot.service.llm.ReplyGenerator.ReplyContext
+import nyetbot.service.llm.context.UserTriggerFeature.UserTrigger
 
-class ReplyFeatureSpec extends CatsEffectSuite:
+class ReplyGeneratorSpec extends CatsEffectSuite:
 
-    private val config = ReplyFeatureConfig(
+    private val config = ReplyGeneratorConfig(
       modelConfig = OllamaModelConfig(
         model = "reply-model",
         system = Some("system prompt"),
@@ -29,9 +31,17 @@ class ReplyFeatureSpec extends CatsEffectSuite:
     )
 
     private val context = ReplyContext(
-      blocks = List(
-        ReplyBlocks.userTrigger(UserRef(UserId(42L), DisplayName("Гоша")), "триггер")
-      )
+      dossier = None,
+      topic = None,
+      chatLog = None,
+      replyTarget = None,
+      userTrigger = Some(
+        UserTrigger(UserRef(UserId(42L), DisplayName("Гоша")), NonEmptyString("триггер"))
+      ),
+      register = None,
+      intent = None,
+      date = None,
+      minChars = 200
     )
 
     private class RecordingClient(ref: Ref[IO, List[OllamaClient.Req]]) extends OllamaClient:
@@ -41,8 +51,8 @@ class ReplyFeatureSpec extends CatsEffectSuite:
     test("builds a configured request and changes only the prompt") {
         for
             requests <- Ref.of[IO, List[OllamaClient.Req]](Nil)
-            feature   = ReplyFeature(RecordingClient(requests), config)
-            result   <- feature.generateReply(context)
+            generator = ReplyGenerator(RecordingClient(requests), config)
+            result   <- generator.generate(context)
             captured <- requests.get
         yield
             assertEquals(result, "ответ")

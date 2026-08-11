@@ -1,4 +1,4 @@
-package nyetbot.config.llm.feature
+package nyetbot.config.llm
 
 import pureconfig.ConfigReader
 

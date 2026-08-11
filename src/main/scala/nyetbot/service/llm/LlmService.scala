@@ -1,30 +1,15 @@
 package nyetbot.service.llm
 
-import cats.effect.Clock
 import cats.effect.IO
 import cats.effect.std.Random
-import io.github.iltotore.iron.*
-import nyetbot.config.ProfileServiceConfig
-import nyetbot.model.LlmContextMessage
-import nyetbot.model.ProfileModels.*
-import nyetbot.repo.ProfileRepo
-import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
-import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
-
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import nyetbot.config.ReplyLengthConfig
+import nyetbot.service.llm.ReplyGenerator.ReplyContext
+import nyetbot.service.llm.context.ContextFeatures
+import nyetbot.service.llm.context.DossierFeature.Dossier
 
 trait LlmService:
-    def generateReply(
-        target: UserRef,
-        triggerText: String,
-        recentUserMsgs: List[LlmContextMessage],
-        recentChat: List[LlmContextMessage],
-        trigger: LlmService.Trigger
-    ): IO[LlmService.GeneratedReply]
-
-    def rewriteProfile(target: UserRef, gen: LlmService.GeneratedReply): IO[Unit]
+    def generateReply(in: ReplyInputs): IO[LlmService.GeneratedReply]
+    def rewriteProfile(gen: LlmService.GeneratedReply): IO[Unit]
 
 object LlmService:
     enum Trigger:
@@ -32,74 +17,43 @@ object LlmService:
         case Tagged(question: String, replyToText: String)
         case Reply(question: String, replyToText: String)
 
-    final case class GeneratedReply(text: String, recentSummary: String, oldProfile: String)
+    final case class GeneratedReply(text: String, dossier: Option[Dossier])
 
     def apply(
-        repo: ProfileRepo,
-        llm: LlmFeatures,
-        config: ProfileServiceConfig
+        features: ContextFeatures,
+        reply: ReplyGenerator,
+        rewriter: ProfileRewriter,
+        config: ReplyLengthConfig
     )(using Random[IO]): LlmService =
         new LlmService:
-            override def generateReply(
-                target: UserRef,
-                triggerText: String,
-                recentUserMsgs: List[LlmContextMessage],
-                recentChat: List[LlmContextMessage],
-                trigger: Trigger
-            ): IO[GeneratedReply] =
+            override def generateReply(in: ReplyInputs): IO[GeneratedReply] =
                 for
-                    oldProfile <-
-                        repo.getProfile(target.id).map(_.map(_.description.value).getOrElse(""))
-                    summary    <- llm.summarizeUser(recentUserMsgs, target)
-                    topic      <- llm
-                                      .summarizeThread(
-                                        recentChat.takeRight(config.topicContextWindow)
-                                      )
-                                      .handleError(_ => "")
-                    register   <- llm
-                                      .classifyRegister(triggerText, recentChat)
-                                      .handleError(_ => Register.Byt)
-                    intent     <- trigger match
-                                      case Trigger.Tagged(q, r) =>
-                                          llm.classifyTagIntent(q, r, recentChat)
-                                      case Trigger.Reply(q, r)  =>
-                                          llm.classifyTagIntent(q, r, recentChat)
-                                      case Trigger.Random(_)    =>
-                                          IO.pure(TagIntent.Contextual)
-                    minChars   <- targetMinChars(triggerText)
-                    date       <- currentDate
-                    ctx         = llm.assembleReply(
-                                    target,
-                                    triggerText,
-                                    minChars,
-                                    trigger,
-                                    oldProfile,
-                                    summary,
-                                    topic,
-                                    register,
-                                    intent,
-                                    date,
-                                    recentChat
-                                  )
-                    text       <- llm.generateReply(ctx)
-                yield GeneratedReply(text, summary, oldProfile)
+                    dossier     <- features.dossier.get(in)
+                    topic       <- features.topic.get(in)
+                    register    <- features.register.get(in)
+                    intent      <- features.intent.get(in)
+                    chatLog     <- features.chatLog.get(in)
+                    replyTarget <- features.replyTarget.get(in)
+                    userTrigger <- features.userTrigger.get(in)
+                    date        <- features.date.get(in)
+                    minChars    <- targetMinChars(in.triggerText)
+                    text        <- reply.generate(
+                                     ReplyContext(
+                                       dossier = dossier,
+                                       topic = topic,
+                                       chatLog = chatLog,
+                                       replyTarget = replyTarget,
+                                       userTrigger = userTrigger,
+                                       register = register,
+                                       intent = intent,
+                                       date = date,
+                                       minChars = minChars
+                                     )
+                                   )
+                yield GeneratedReply(text, dossier)
 
-            override def rewriteProfile(target: UserRef, gen: GeneratedReply): IO[Unit] =
-                for
-                    merged <- llm.rewriteProfile(gen.oldProfile, gen.recentSummary, target)
-                    _      <- repo.upsertProfile(
-                                target.id,
-                                target.displayName,
-                                ProfileDescription.truncate(merged)
-                              )
-                yield ()
-
-            private val currentDateFormatter =
-                DateTimeFormatter.ofPattern("LLLL yyyy", Locale.forLanguageTag("ru"))
-
-            private def currentDate: IO[String] =
-                Clock[IO].realTimeInstant
-                    .map(_.atZone(ZoneId.systemDefault()).format(currentDateFormatter))
+            override def rewriteProfile(gen: GeneratedReply): IO[Unit] =
+                gen.dossier.fold(IO.unit)(rewriter.rewrite)
 
             private def targetMinChars(triggerText: String): IO[Int] =
                 val base = if triggerText.nonEmpty then triggerText.length else config.minChars

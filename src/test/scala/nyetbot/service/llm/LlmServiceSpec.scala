@@ -3,234 +3,192 @@ package nyetbot.service.llm
 import cats.effect.IO
 import cats.effect.Ref
 import cats.effect.std.Random
-import io.github.iltotore.iron.*
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
-import nyetbot.config.llm.feature.OllamaModelConfig
-import nyetbot.config.llm.feature.ReplyFeatureConfig
 import nyetbot.model.LlmContextMessage
+import nyetbot.model.NonEmptyString
 import nyetbot.model.ProfileModels.*
-import nyetbot.repo.ProfileRepoInMemory
 import nyetbot.service.llm.LlmService.*
-import nyetbot.service.llm.feature.ClassifyIntentFeature.TagIntent
-import nyetbot.service.llm.feature.ClassifyRegisterFeature.Register
-import nyetbot.service.llm.feature.ReplyBlocks
-import nyetbot.service.llm.feature.ReplyFeature.ReplyContext
+import nyetbot.service.llm.ReplyGenerator.ReplyContext
+import nyetbot.service.llm.context.*
+import nyetbot.service.llm.context.ChatLogFeature.ChatLog
+import nyetbot.service.llm.context.DateFeature.ReplyDate
+import nyetbot.service.llm.context.DossierFeature.*
+import nyetbot.service.llm.context.IntentFeature.TagIntent
+import nyetbot.service.llm.context.RegisterFeature.Register
+import nyetbot.service.llm.context.ReplyTargetFeature.ReplyTarget
+import nyetbot.service.llm.context.TopicFeature.Topic
+import nyetbot.service.llm.context.UserTriggerFeature.UserTrigger
 
 class LlmServiceSpec extends CatsEffectSuite:
 
-    private class RecordingLlm(
+    private val target  = UserRef(UserId(42L), DisplayName("Гоша"))
+    private val chat    = List(LlmContextMessage(Some(UserId(42L)), "Гоша", "казино хуже"))
+    private val inputs  = ReplyInputs(target, "триггер", Trigger.Random(""), chat, chat)
+    private val dossier = Dossier(target, None, Some(UserSummary("свежая сводка")))
+
+    private def feature[A](
         calls: Ref[IO, List[String]],
-        rewriteOut: String = "обновлённое досье",
-        replyContexts: Option[Ref[IO, List[ReplyContext]]] = None,
-        threadInputs: Option[Ref[IO, List[List[LlmContextMessage]]]] = None,
-        topicResult: Either[Throwable, String] = Right("суть обсуждения"),
-        registerResult: Either[Throwable, Register] = Right(Register.Spor)
-    ) extends LlmFeatures:
-        def generateReply(ctx: ReplyContext): IO[String]                                        =
-            calls.update(_ :+ "generateReply").flatMap { _ =>
-                replyContexts match
-                    case Some(contexts) => contexts.update(_ :+ ctx).as("шиза-ответ")
-                    case None           => IO.pure("шиза-ответ")
-            }
-        def assembleReply(
-            target: UserRef,
-            triggerText: String,
-            minChars: Int,
-            trigger: LlmService.Trigger,
-            oldProfile: String,
-            summary: String,
-            topic: String,
-            register: Register,
-            intent: TagIntent,
-            date: String,
-            recentChat: List[LlmContextMessage]
-        ): ReplyContext =
-            LlmFeatures.assemble(
-              ReplyFeatureConfig(modelConfig = OllamaModelConfig(model = "test")),
-              target,
-              triggerText,
-              minChars,
-              trigger,
-              oldProfile,
-              summary,
-              topic,
-              register,
-              intent,
-              date,
-              recentChat
-            )
-        def summarizeUser(recent: List[LlmContextMessage], who: UserRef): IO[String]            =
-            calls.update(_ :+ "summarizeUser").as("свежая сводка")
-        def summarizeThread(recentChat: List[LlmContextMessage]): IO[String]                    =
-            calls.update(_ :+ "summarizeThread") *>
-                threadInputs.fold(IO.unit)(_.update(_ :+ recentChat)) *>
-                IO.fromEither(topicResult)
-        def rewriteProfile(oldProfile: String, recentSummary: String, who: UserRef): IO[String] =
-            calls.update(_ :+ "rewriteProfile").as(rewriteOut)
-        def classifyTagIntent(
-            question: String,
-            replyToText: String,
-            recentChat: List[LlmContextMessage]
-        ): IO[TagIntent] =
-            calls.update(_ :+ "classifyTagIntent").as(TagIntent.NewQuestion)
-        def classifyRegister(
-            triggerText: String,
-            recentChat: List[LlmContextMessage]
-        ): IO[Register] =
-            calls.update(_ :+ "classifyRegister") *> IO.fromEither(registerResult)
+        name: String,
+        out: Option[A]
+    ): ContextFeature[A] =
+        _ => calls.update(_ :+ name).as(out)
 
-    private val target = UserRef(UserId(42L), DisplayName("Гоша"))
-    private val chat   = List(LlmContextMessage(Some(UserId(42L)), "Гоша", "казино хуже"))
+    private def allFeatures(calls: Ref[IO, List[String]]): ContextFeatures =
+        ContextFeatures(
+          dossier = feature(calls, "dossier", Some(dossier)),
+          topic = feature(calls, "topic", Some(Topic("суть обсуждения"))),
+          register = feature(calls, "register", Some(Register.Spor)),
+          intent = feature(calls, "intent", Some(TagIntent.NewQuestion)),
+          chatLog = feature(calls, "chatLog", Some(ChatLog("Гоша: казино хуже"))),
+          replyTarget = feature(
+            calls,
+            "replyTarget",
+            Some(ReplyTarget(NonEmptyString("позиция бота"), true))
+          ),
+          userTrigger =
+              feature(calls, "userTrigger", Some(UserTrigger(target, NonEmptyString("триггер")))),
+          date = feature(calls, "date", Some(ReplyDate("август 2026")))
+        )
 
-    private def mkService(repo: ProfileRepoInMemory, llm: LlmFeatures): IO[LlmService] =
+    private def noneFeatures(calls: Ref[IO, List[String]]): ContextFeatures =
+        ContextFeatures(
+          dossier = feature(calls, "dossier", None),
+          topic = feature(calls, "topic", None),
+          register = feature(calls, "register", None),
+          intent = feature(calls, "intent", None),
+          chatLog = feature(calls, "chatLog", None),
+          replyTarget = feature(calls, "replyTarget", None),
+          userTrigger = feature(calls, "userTrigger", None),
+          date = feature(calls, "date", None)
+        )
+
+    private class RecordingGenerator(contexts: Ref[IO, List[ReplyContext]]) extends ReplyGenerator:
+        def generate(ctx: ReplyContext): IO[String] = contexts.update(_ :+ ctx).as("шиза-ответ")
+
+    private class RecordingRewriter(rewrites: Ref[IO, List[Dossier]]) extends ProfileRewriter:
+        def rewrite(dossier: Dossier): IO[Unit] = rewrites.update(_ :+ dossier)
+
+    private def mkService(
+        features: ContextFeatures,
+        generator: ReplyGenerator,
+        rewriter: ProfileRewriter
+    ): IO[LlmService] =
         Random
             .scalaUtilRandom[IO]
-            .map(r => LlmService(repo, llm, Fixtures.profileServiceConfig)(using r))
+            .map(r =>
+                LlmService(features, generator, rewriter, Fixtures.replyLengthConfig)(using r)
+            )
 
-    test(
-      "random trigger skips intent classification but enriches the reply with topic and register"
-    ) {
+    test("generateReply consults every context feature and returns the generated text") {
         for
-            calls <- Ref.of[IO, List[String]](Nil)
-            repo  <- ProfileRepoInMemory.create
-            svc   <- mkService(repo, RecordingLlm(calls))
-            gen   <- svc.generateReply(target, "триггер", chat, chat, Trigger.Random(""))
-            seen  <- calls.get
+            calls    <- Ref.of[IO, List[String]](Nil)
+            contexts <- Ref.of[IO, List[ReplyContext]](Nil)
+            rewrites <- Ref.of[IO, List[Dossier]](Nil)
+            svc      <- mkService(
+                          allFeatures(calls),
+                          RecordingGenerator(contexts),
+                          RecordingRewriter(rewrites)
+                        )
+            gen      <- svc.generateReply(inputs)
+            seen     <- calls.get
         yield
             assertEquals(gen.text, "шиза-ответ")
+            assertEquals(gen.dossier, Some(dossier))
             assertEquals(
               seen,
-              List("summarizeUser", "summarizeThread", "classifyRegister", "generateReply")
+              List(
+                "dossier",
+                "topic",
+                "register",
+                "intent",
+                "chatLog",
+                "replyTarget",
+                "userTrigger",
+                "date"
+              )
             )
     }
 
-    test("tagged trigger classifies intent after topic and register") {
-        for
-            calls <- Ref.of[IO, List[String]](Nil)
-            repo  <- ProfileRepoInMemory.create
-            svc   <- mkService(repo, RecordingLlm(calls))
-            _     <- svc.generateReply(
-                       target,
-                       "триггер",
-                       chat,
-                       chat,
-                       Trigger.Tagged("эй бот", "исходное")
-                     )
-            seen  <- calls.get
-        yield assertEquals(
-          seen,
-          List(
-            "summarizeUser",
-            "summarizeThread",
-            "classifyRegister",
-            "classifyTagIntent",
-            "generateReply"
-          )
-        )
-    }
-
-    test("topic summarization receives only the configured tail of recent chat") {
-        val longChat = (1 to 12).toList.map(i =>
-            LlmContextMessage(Some(UserId(i.toLong)), s"User$i", s"message-$i")
-        )
-        for
-            calls  <- Ref.of[IO, List[String]](Nil)
-            inputs <- Ref.of[IO, List[List[LlmContextMessage]]](Nil)
-            repo   <- ProfileRepoInMemory.create
-            svc    <- mkService(repo, RecordingLlm(calls, threadInputs = Some(inputs)))
-            _      <- svc.generateReply(target, "триггер", chat, longChat, Trigger.Random(""))
-            seen   <- inputs.get
-        yield
-            assertEquals(seen.size, 1)
-            assertEquals(seen.head.map(_.text), (3 to 12).toList.map(i => s"message-$i"))
-    }
-
-    test("topic and register failures fall back and still produce a reply") {
+    test("feature outputs flow into the reply context unchanged") {
         for
             calls    <- Ref.of[IO, List[String]](Nil)
             contexts <- Ref.of[IO, List[ReplyContext]](Nil)
-            repo     <- ProfileRepoInMemory.create
-            llm       = RecordingLlm(
-                          calls,
-                          replyContexts = Some(contexts),
-                          topicResult = Left(new RuntimeException("topic unavailable")),
-                          registerResult = Left(new RuntimeException("register unavailable"))
+            rewrites <- Ref.of[IO, List[Dossier]](Nil)
+            svc      <- mkService(
+                          allFeatures(calls),
+                          RecordingGenerator(contexts),
+                          RecordingRewriter(rewrites)
                         )
-            svc      <- mkService(repo, llm)
-            gen      <- svc.generateReply(target, "триггер", chat, chat, Trigger.Random(""))
+            _        <- svc.generateReply(inputs)
+            captured <- contexts.get
+        yield
+            assertEquals(captured.size, 1)
+            val ctx = captured.head
+            assertEquals(ctx.dossier, Some(dossier))
+            assertEquals(ctx.topic, Some(Topic("суть обсуждения")))
+            assertEquals(ctx.register, Some(Register.Spor))
+            assertEquals(ctx.intent, Some(TagIntent.NewQuestion))
+            assertEquals(ctx.chatLog, Some(ChatLog("Гоша: казино хуже")))
+            assertEquals(ctx.replyTarget, Some(ReplyTarget(NonEmptyString("позиция бота"), true)))
+            assertEquals(ctx.userTrigger, Some(UserTrigger(target, NonEmptyString("триггер"))))
+            assertEquals(ctx.date, Some(ReplyDate("август 2026")))
+            assert(ctx.minChars >= Fixtures.replyLengthConfig.minChars)
+            assert(ctx.minChars <= Fixtures.replyLengthConfig.maxChars)
+    }
+
+    test("features returning None still produce a reply with an empty context") {
+        for
+            calls    <- Ref.of[IO, List[String]](Nil)
+            contexts <- Ref.of[IO, List[ReplyContext]](Nil)
+            rewrites <- Ref.of[IO, List[Dossier]](Nil)
+            svc      <- mkService(
+                          noneFeatures(calls),
+                          RecordingGenerator(contexts),
+                          RecordingRewriter(rewrites)
+                        )
+            gen      <- svc.generateReply(inputs)
             captured <- contexts.get
         yield
             assertEquals(gen.text, "шиза-ответ")
-            assertEquals(captured.size, 1)
-            val prompt = ReplyBlocks.render(captured.head.blocks)
-            assert(!prompt.contains("\n[СУТЬ ОБСУЖДЕНИЯ]\n"))
-            assert(prompt.contains("[ЗАДАЧА]"))
-            assert(prompt.contains("Это бытовая болтовня"))
+            assertEquals(gen.dossier, None)
+            val ctx = captured.head
+            assertEquals(ctx.dossier, None)
+            assertEquals(ctx.topic, None)
+            assertEquals(ctx.register, None)
+            assertEquals(ctx.intent, None)
+            assertEquals(ctx.chatLog, None)
+            assertEquals(ctx.replyTarget, None)
+            assertEquals(ctx.userTrigger, None)
+            assertEquals(ctx.date, None)
     }
 
-    test("random trigger forwards ordinary reply-to text without marking it as the bot") {
+    test("rewriteProfile delegates to the rewriter when a dossier exists") {
         for
             calls    <- Ref.of[IO, List[String]](Nil)
             contexts <- Ref.of[IO, List[ReplyContext]](Nil)
-            repo     <- ProfileRepoInMemory.create
-            svc      <- mkService(repo, RecordingLlm(calls, replyContexts = Some(contexts)))
-            _        <- svc.generateReply(
-                          target,
-                          "случайное сообщение",
-                          chat,
-                          chat,
-                          Trigger.Random("сообщение другого человека")
+            rewrites <- Ref.of[IO, List[Dossier]](Nil)
+            svc      <- mkService(
+                          allFeatures(calls),
+                          RecordingGenerator(contexts),
+                          RecordingRewriter(rewrites)
                         )
-            captured <- contexts.get
-        yield
-            assertEquals(captured.size, 1)
-            val prompt = ReplyBlocks.render(captured.head.blocks)
-            assert(prompt.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
-            assert(prompt.contains("сообщение другого человека"))
-            assert(!prompt.contains("(это ТВОЁ прошлое сообщение"))
+            _        <- svc.rewriteProfile(GeneratedReply("текст", Some(dossier)))
+            seen     <- rewrites.get
+        yield assertEquals(seen, List(dossier))
     }
 
-    test("reply-to-bot details reach the reply context") {
+    test("rewriteProfile does nothing without a dossier") {
         for
             calls    <- Ref.of[IO, List[String]](Nil)
             contexts <- Ref.of[IO, List[ReplyContext]](Nil)
-            repo     <- ProfileRepoInMemory.create
-            svc      <- mkService(repo, RecordingLlm(calls, replyContexts = Some(contexts)))
-            _        <- svc.generateReply(
-                          target,
-                          "возражение",
-                          chat,
-                          chat,
-                          Trigger.Reply("возражение", "позиция бота")
+            rewrites <- Ref.of[IO, List[Dossier]](Nil)
+            svc      <- mkService(
+                          allFeatures(calls),
+                          RecordingGenerator(contexts),
+                          RecordingRewriter(rewrites)
                         )
-            captured <- contexts.get
-        yield
-            assertEquals(captured.size, 1)
-            val prompt = ReplyBlocks.render(captured.head.blocks)
-            assert(prompt.contains("[НА ЧТО ОН ОТВЕЧАЕТ]"))
-            assert(prompt.contains("позиция бота"))
-            assert(prompt.contains("(это ТВОЁ прошлое сообщение"))
-    }
-
-    test("rewriteProfile persists a description truncated to <= 300 chars") {
-        val longOut = "я".repeat(500)
-        for
-            calls <- Ref.of[IO, List[String]](Nil)
-            repo  <- ProfileRepoInMemory.create
-            svc   <- mkService(repo, RecordingLlm(calls, rewriteOut = longOut))
-            _     <- svc.rewriteProfile(target, GeneratedReply("t", "сводка", "старое"))
-            saved <- repo.getProfile(UserId(42L))
-        yield
-            assert(saved.isDefined)
-            assertEquals(saved.get.description.value.length, 300)
-    }
-
-    test("an empty stored profile is forwarded as an empty oldProfile") {
-        for
-            calls <- Ref.of[IO, List[String]](Nil)
-            repo  <- ProfileRepoInMemory.create
-            svc   <- mkService(repo, RecordingLlm(calls))
-            gen   <- svc.generateReply(target, "триггер", chat, chat, Trigger.Random(""))
-        yield assertEquals(gen.oldProfile, "")
+            _        <- svc.rewriteProfile(GeneratedReply("текст", None))
+            seen     <- rewrites.get
+        yield assertEquals(seen, Nil)
     }

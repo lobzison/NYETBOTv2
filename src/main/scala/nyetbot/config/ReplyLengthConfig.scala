@@ -2,8 +2,7 @@ package nyetbot.config
 
 import pureconfig.ConfigReader
 
-final case class ProfileServiceConfig(
-    topicContextWindow: Int,
+final case class ReplyLengthConfig(
     minChars: Int,
     meanFactor: Double,
     spread: Double,

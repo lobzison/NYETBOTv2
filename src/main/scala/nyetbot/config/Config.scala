@@ -11,7 +11,7 @@ case class Config(
     botToken: String,
     dbConfig: DbConfig,
     llmConfig: LlmFunctionalityConfig,
-    profileServiceConfig: ProfileServiceConfig,
+    replyLengthConfig: ReplyLengthConfig,
     ollamaConfig: OllamaConfig
 )
 
@@ -20,7 +20,7 @@ object Config:
         botToken: String,
         databaseUrl: String,
         llm: LlmFunctionalityConfig,
-        profileService: ProfileServiceConfig,
+        replyLength: ReplyLengthConfig,
         ollama: OllamaConfig
     ) derives ConfigReader
 
@@ -35,7 +35,7 @@ object Config:
               botToken = settings.botToken,
               dbConfig = DbConfig(settings.databaseUrl),
               llmConfig = settings.llm,
-              profileServiceConfig = settings.profileService,
+              replyLengthConfig = settings.replyLength,
               ollamaConfig = settings.ollama
             )
         }

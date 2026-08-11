@@ -13,7 +13,7 @@ import nyetbot.functionality.*
 import nyetbot.repo.*
 import nyetbot.service.{HeartbeatService, *}
 import nyetbot.service.llm.*
-import nyetbot.service.llm.feature.*
+import nyetbot.service.llm.context.*
 import nyetbot.config.Config
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.Client
@@ -55,52 +55,45 @@ object Main extends IOApp.Simple:
         TelegramClient[IO]
     ): IO[List[Scenario[IO, Unit]]] =
         for
-            _                      <- IO.println("Starting NYETBOTv2")
-            given Random[IO]       <- Random.scalaUtilRandom[IO]
-            _                      <- fly4s.migrate
-            memeRepo                = MemeRepoDB(db)
-            swearRepo               = SwearRepo(db)
-            swearService           <- SwearServiceCached(swearRepo)
-            swear                   = SwearFunctionality(swearService)
-            service                <- MemeServiceCached(memeRepo)
-            meme                    = MemeFunctionality(service)
-            profileRepo             = ProfileRepoDB(db)
-            ollamaClient            = OllamaClient(client, Uri.unsafeFromString(config.ollamaConfig.uri))
-            replyFeature            = ReplyFeature(ollamaClient, config.ollamaConfig.reply)
-            summarizeThreadFeature  =
-                SummarizeThreadFeature(
-                  ollamaClient,
-                  config.ollamaConfig.summarizeThread
+            _                <- IO.println("Starting NYETBOTv2")
+            given Random[IO] <- Random.scalaUtilRandom[IO]
+            _                <- fly4s.migrate
+            memeRepo          = MemeRepoDB(db)
+            swearRepo         = SwearRepo(db)
+            swearService     <- SwearServiceCached(swearRepo)
+            swear             = SwearFunctionality(swearService)
+            service          <- MemeServiceCached(memeRepo)
+            meme              = MemeFunctionality(service)
+            profileRepo       = ProfileRepoDB(db)
+            ollamaClient      = OllamaClient(client, Uri.unsafeFromString(config.ollamaConfig.uri))
+            contextConfig     = config.ollamaConfig.context
+            contextFeatures   = ContextFeatures(
+                                  dossier = DossierFeature(
+                                    ollamaClient,
+                                    profileRepo,
+                                    contextConfig.dossier
+                                  ),
+                                  topic = TopicFeature(ollamaClient, contextConfig.topic),
+                                  register = RegisterFeature(ollamaClient, contextConfig.register),
+                                  intent = IntentFeature(ollamaClient, contextConfig.intent),
+                                  chatLog = ChatLogFeature(contextConfig.chatLog),
+                                  replyTarget = ReplyTargetFeature(contextConfig.replyTarget),
+                                  userTrigger = UserTriggerFeature(contextConfig.userTrigger),
+                                  date = DateFeature(contextConfig.date)
+                                )
+            replyGenerator    = ReplyGenerator(ollamaClient, config.ollamaConfig.reply)
+            profileRewriter   =
+                ProfileRewriter(ollamaClient, profileRepo, config.ollamaConfig.profileRewrite)
+            llmService        =
+                LlmService(
+                  contextFeatures,
+                  replyGenerator,
+                  profileRewriter,
+                  config.replyLengthConfig
                 )
-            classifyIntentFeature   =
-                ClassifyIntentFeature(
-                  ollamaClient,
-                  config.ollamaConfig.classifyIntent
-                )
-            summarizeUserFeature    =
-                SummarizeUserFeature(
-                  ollamaClient,
-                  config.ollamaConfig.summarizeUser
-                )
-            classifyRegisterFeature =
-                ClassifyRegisterFeature(
-                  ollamaClient,
-                  config.ollamaConfig.classifyRegister
-                )
-            llmFeatures             =
-                LlmFeatures(
-                  replyFeature,
-                  summarizeThreadFeature,
-                  classifyIntentFeature,
-                  summarizeUserFeature,
-                  classifyRegisterFeature,
-                  config.ollamaConfig.reply
-                )
-            llmService              =
-                LlmService(profileRepo, llmFeatures, config.profileServiceConfig)
-            llm                    <- LlmFunctionality(llmService, config.llmConfig)
-            mediaRelay              = MediaRelayFunctionality(MediaRelayService())
-            _                      <- IO.println("Ready")
+            llm              <- LlmFunctionality(llmService, config.llmConfig)
+            mediaRelay        = MediaRelayFunctionality(MediaRelayService())
+            _                <- IO.println("Ready")
         yield List(
           meme.triggerMemeScenario
         ) ++ meme.memeManagementScenarios ++ swear.scenarios :+ llm.reply :+ mediaRelay.scenario

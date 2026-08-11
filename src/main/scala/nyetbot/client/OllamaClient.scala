@@ -4,7 +4,7 @@ import cats.effect.IO
 import io.circe.{Encoder, Json}
 import io.circe.derivation.{ConfiguredEncoder, Configuration}
 import io.circe.syntax.*
-import nyetbot.config.llm.feature.OllamaModelConfig
+import nyetbot.config.llm.OllamaModelConfig
 import org.http4s.Method.POST
 import org.http4s.Request
 import org.http4s.Uri

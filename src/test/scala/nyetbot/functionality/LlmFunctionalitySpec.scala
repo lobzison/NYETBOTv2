@@ -9,10 +9,9 @@ import cats.effect.IO
 import cats.effect.std.Random
 import munit.CatsEffectSuite
 import nyetbot.Fixtures
-import nyetbot.model.LlmContextMessage
-import nyetbot.model.ProfileModels.*
 import nyetbot.service.llm.LlmService
-import nyetbot.service.llm.LlmService.{GeneratedReply, Trigger}
+import nyetbot.service.llm.LlmService.GeneratedReply
+import nyetbot.service.llm.ReplyInputs
 
 class LlmFunctionalitySpec extends CatsEffectSuite:
 
@@ -20,17 +19,11 @@ class LlmFunctionalitySpec extends CatsEffectSuite:
         override def execute[Req, Res](request: Req)(implicit method: Method[Req, Res]): IO[Res] =
             IO.raiseError(new IllegalStateException("Telegram client must not be called"))
 
-    private val profileService = new LlmService:
-        override def generateReply(
-            target: UserRef,
-            triggerText: String,
-            recentUserMsgs: List[LlmContextMessage],
-            recentChat: List[LlmContextMessage],
-            trigger: Trigger
-        ): IO[GeneratedReply] =
-            IO.raiseError(new IllegalStateException("Profile service must not be called"))
+    private val llmService = new LlmService:
+        override def generateReply(in: ReplyInputs): IO[GeneratedReply] =
+            IO.raiseError(new IllegalStateException("LLM service must not be called"))
 
-        override def rewriteProfile(target: UserRef, gen: GeneratedReply): IO[Unit] = IO.unit
+        override def rewriteProfile(gen: GeneratedReply): IO[Unit] = IO.unit
 
     private val chat = PrivateChat(1L, None, None, None)
 
@@ -55,7 +48,7 @@ class LlmFunctionalitySpec extends CatsEffectSuite:
 
     test("reply to the configured bot username is detected case-insensitively") {
         Random.scalaUtilRandom[IO].flatMap { random =>
-            LlmFunctionality(profileService, Fixtures.llmConfig)(using client, random)
+            LlmFunctionality(llmService, Fixtures.llmConfig)(using client, random)
                 .map { functionality =>
                     assert(
                       functionality.isReplyToBot(

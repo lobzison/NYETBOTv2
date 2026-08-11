@@ -8,5 +8,6 @@ final case class LlmFunctionalityConfig(
     messageEvery: Int,
     chatBufferSize: Int,
     replyContextWindow: Int,
-    recentUserMessages: Int
+    recentUserMessages: Int,
+    enabled: Boolean = true
 ) derives ConfigReader

@@ -11,7 +11,6 @@ import cats.syntax.all.*
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.model.*
 import nyetbot.model.ProfileModels.*
-import nyetbot.service.*
 import nyetbot.service.llm.*
 import nyetbot.service.llm.LlmService.Trigger
 
@@ -22,7 +21,7 @@ trait LlmFunctionality:
     def isReplyToBot(msg: TextMessage): Boolean
 
 object LlmFunctionality:
-    def apply(profileService: LlmService, config: LlmFunctionalityConfig)(using
+    def apply(llmService: LlmService, config: LlmFunctionalityConfig)(using
         TelegramClient[IO],
         Random[IO]
     ): IO[LlmFunctionality] =
@@ -100,12 +99,14 @@ object LlmFunctionality:
                                     perUser.get.map(
                                       _.getOrElse(UserId(user.id), Vector.empty).toList
                                     )
-                                gen        <- profileService.generateReply(
-                                                target,
-                                                triggerText,
-                                                recentUser,
-                                                recentChat,
-                                                trigger
+                                gen        <- llmService.generateReply(
+                                                ReplyInputs(
+                                                  target = target,
+                                                  triggerText = triggerText,
+                                                  trigger = trigger,
+                                                  recentChat = recentChat,
+                                                  recentUserMsgs = recentUser
+                                                )
                                               )
                                 _          <- context.update(m =>
                                                   (m :+ LlmContextMessage(None, config.botName, gen.text))
@@ -115,12 +116,12 @@ object LlmFunctionality:
                             yield gen
 
                         produce.race(typing).flatMap {
-                            case Left(gen) => profileService.rewriteProfile(target, gen)
+                            case Left(gen) => llmService.rewriteProfile(gen)
                             case Right(_)  => IO.unit
                         }
 
             override def reply: Scenario[IO, Unit] =
                 for
                     msg <- Scenario.expect(textMessage)
-                    _   <- Scenario.eval(ingest(msg) *> maybeReply(msg))
+                    _   <- Scenario.eval(IO.whenA(config.enabled)(ingest(msg) *> maybeReply(msg)))
                 yield ()
