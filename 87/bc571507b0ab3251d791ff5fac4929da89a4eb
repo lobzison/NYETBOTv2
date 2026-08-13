@@ -1,0 +1,100 @@
+lab/src/main/scala/nyetbot/lab/Preprocess.scala
+  s_8fb408309db26b::t_972efd674b0339 20-23
+  s_8fb408309db26b::t_6a84a111ae7758 1-19,24-44
+lab/src/main/scala/nyetbot/lab/RecordingOllamaClient.scala
+  s_8fb408309db26b::t_2101dad55ba35d 1-29
+lab/src/main/scala/nyetbot/lab/WindowSampler.scala
+  s_8fb408309db26b::t_50dca96c604494 1-24
+  s_8fb408309db26b::t_972efd674b0339 25-29
+lab/src/test/scala/nyetbot/lab/LabConfigSpec.scala
+  s_8fb408309db26b::t_355b8ae2988b98 1-23,26-61
+  s_8fb408309db26b::t_195b30b6b71e9e 24-25
+lab/scenarios/no-dossier.conf
+  s_8fb408309db26b::t_ae8d6a0da72c7b 1-2
+lab/src/main/scala/nyetbot/lab/TelegramExportPipe.scala
+  s_8fb408309db26b::t_972efd674b0339 85-86,106-107
+  s_8fb408309db26b::t_c66e2a962a7464 1-84,87-105,108-122
+lab/scenarios/hot-temp.conf
+  s_8fb408309db26b::t_7921c9507b3d1f 1-2
+lab/src/main/scala/nyetbot/lab/CorpusModels.scala
+  s_8fb408309db26b::t_63b445841d2276 1-19,21,23,25-53
+  s_8fb408309db26b::t_b66653f3f8cbe4 20,22,24
+lab/src/main/resources/lab-base.conf
+  s_8fb408309db26b::t_b7d82630da5307 1-44
+lab/src/main/scala/nyetbot/lab/ReplayApp.scala
+  s_8fb408309db26b::t_4c2496477927c8 184
+  s_8fb408309db26b::t_bd68c94c2965c6 170
+  s_8fb408309db26b::t_37454f7bbb9587 33-39
+  s_8fb408309db26b::t_fed7cb4881b532 92,94-95,97,101
+  s_8fb408309db26b::t_11466b8130ab92 151-163
+  s_8fb408309db26b::t_195b30b6b71e9e 81-82,228-243,245
+  s_8fb408309db26b::t_47a74517e55a0e 1-32,40-80,83-91,93,96,98-100,102-108,112-150,164-169,171-183,185-227,244,246-266
+  s_8fb408309db26b::t_19bc9dae805ea0 109-111
+build.sbt
+  s_8fb408309db26b::t_9c40f11afa4d21 54
+  s_8fb408309db26b::t_f4054aac6d1ffe 61,63-73
+  s_8fb408309db26b::t_88e08fea27e2dc 62
+  s_8fb408309db26b::t_4ffb2e5a2e2bf6 56-59
+lab/src/main/scala/nyetbot/lab/ExtractApp.scala
+  s_8fb408309db26b::t_34fc0378d1862a 85-89
+  s_8fb408309db26b::t_72a015d4c49496 98
+  s_8fb408309db26b::t_30aef1537c1fa3 50-53
+  s_8fb408309db26b::t_d422c45a46e91a 46-48,55,57,60-63
+  s_8fb408309db26b::t_bed8f924fc9c47 1-45,49,54,56,58-59,64-79,90-97,99-110,115-137,141-145,150-166,176-215
+  s_8fb408309db26b::t_972efd674b0339 80-84,111-114,138-140,146-149,167-175
+lab/src/test/scala/nyetbot/lab/ExtractAppSpec.scala
+  s_8fb408309db26b::t_cd03f26861b527 1-52,56-70,73-77,80-108,112-114
+  s_8fb408309db26b::t_30aef1537c1fa3 53-55,71-72,78-79,109-111
+lab/src/main/scala/nyetbot/lab/LabConfig.scala
+  s_8fb408309db26b::t_870ad9afe13bcb 19
+  s_8fb408309db26b::t_8b2a0dead71411 1-18,20-26
+lab/src/test/scala/nyetbot/lab/PreprocessSpec.scala
+  s_8fb408309db26b::t_85accd8f70a617 1-153
+src/main/scala/nyetbot/functionality/LlmFunctionality.scala
+  s_8fb408309db26b::t_f49014a57841ea 28-29,80-81,91-92,105-110
+src/test/scala/nyetbot/service/llm/ChatMemorySpec.scala
+  s_8fb408309db26b::t_8cc9b293dd8b6c 1-67
+lab/scenarios/baseline.conf
+  s_8fb408309db26b::t_3960373534b285 1
+lab/src/test/scala/nyetbot/lab/TelegramExportPipeSpec.scala
+  s_8fb408309db26b::t_d2bc83b4ba8e38 91
+  s_8fb408309db26b::t_972efd674b0339 109-112,119-126
+  s_8fb408309db26b::t_1de5c100f1dd69 1-10,12-90,92-108,113-118,127-132
+  s_8fb408309db26b::t_c80f13832a1799 11
+lab/src/main/scala/nyetbot/lab/ReplayWiring.scala
+  s_8fb408309db26b::t_84968c799a02ab 1-37
+lab/src/test/scala/nyetbot/lab/ReplayAppSpec.scala
+  s_8fb408309db26b::t_2c18e7a450b6e1 1-4,6-30,32-37,39-41,43-170,174-189,192-253,284-286,288-300
+  s_8fb408309db26b::t_40765a64205f67 254-259,262-265,271-283
+  s_8fb408309db26b::t_a94b84990bd81c 31
+  s_8fb408309db26b::t_429093538b5627 38,42
+  s_8fb408309db26b::t_a275a1d39c03e2 287
+  s_8fb408309db26b::t_11466b8130ab92 260-261,266-270
+  s_8fb408309db26b::t_cf6b9adf481bd3 5
+  s_8fb408309db26b::t_195b30b6b71e9e 171-172,190-191
+  s_8fb408309db26b::t_2ba9f540e66cb2 173
+lab/src/test/scala/nyetbot/lab/ScenariosSpec.scala
+  s_8fb408309db26b::t_3189328465637e 1-9,11-68
+  s_8fb408309db26b::t_ffa0b2752f693c 10
+src/main/scala/nyetbot/service/llm/ChatMemory.scala
+  s_8fb408309db26b::t_41e838ab65acca 1-37
+lab/src/test/scala/nyetbot/lab/WindowSamplerSpec.scala
+  s_8fb408309db26b::t_9ca68efe39bae7 1-8,15-61
+  s_8fb408309db26b::t_972efd674b0339 9-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "87bc571507b0ab3251d791ff5fac4929da89a4eb",
+  "prompts": {},
+  "sessions": {
+    "s_8fb408309db26b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "367472db-310e-49d0-a01e-9291a676e8ae",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Gleb Lobov <lobzison@gmail.com>"
+    }
+  }
+}
