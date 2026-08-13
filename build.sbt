@@ -51,5 +51,23 @@ addCommandAlias(
 lazy val core =
     project
         .in(file("."))
+        .aggregate(LocalProject("lab"))
         .settings(commonSettings *)
+        .settings(
+          run / aggregate     := false,
+          runMain / aggregate := false
+        )
         .enablePlugins(PackPlugin)
+
+lazy val lab =
+    project
+        .in(file("lab"))
+        .dependsOn(core)
+        .settings(commonSettings *)
+        .settings(
+          name := "nyetbot-lab",
+          libraryDependencies ++= Seq(
+            "org.gnieh" %% "fs2-data-json-circe" % "1.14.1",
+            "co.fs2"    %% "fs2-io"              % "3.13.0"
+          )
+        )

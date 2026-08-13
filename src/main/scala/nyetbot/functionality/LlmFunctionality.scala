@@ -7,7 +7,6 @@ import canoe.syntax.*
 import cats.effect.*
 import cats.effect.std.Mutex
 import cats.effect.std.Random
-import cats.syntax.all.*
 import nyetbot.config.LlmFunctionalityConfig
 import nyetbot.model.*
 import nyetbot.model.ProfileModels.*
@@ -26,24 +25,9 @@ object LlmFunctionality:
         Random[IO]
     ): IO[LlmFunctionality] =
         for
-            mutex   <- Mutex[IO]
-            context <- Ref.of[IO, Vector[LlmContextMessage]](Vector.empty)
-            perUser <- Ref.of[IO, Map[UserId, Vector[LlmContextMessage]]](Map.empty)
+            mutex  <- Mutex[IO]
+            memory <- ChatMemory(config)
         yield new LlmFunctionality:
-            def ingest(msg: TextMessage): IO[Unit] =
-                val newMsg = LlmContextMessage.fromTextMessage(msg)
-                for
-                    _ <- context.update(m => (m :+ newMsg).takeRight(config.chatBufferSize))
-                    _ <- msg.from.traverse_ { u =>
-                             perUser.update { map =>
-                                 val buf =
-                                     (map.getOrElse(UserId(u.id), Vector.empty) :+ newMsg)
-                                         .takeRight(config.recentUserMessages)
-                                 map.updated(UserId(u.id), buf)
-                             }
-                         }
-                yield ()
-
             override def isReplyToBot(msg: TextMessage): Boolean =
                 msg.replyToMessage.exists {
                     case t: TextMessage =>
@@ -93,12 +77,8 @@ object LlmFunctionality:
 
                         val produce =
                             for
-                                recentChat <-
-                                    context.get.map(_.takeRight(config.replyContextWindow).toList)
-                                recentUser <-
-                                    perUser.get.map(
-                                      _.getOrElse(UserId(user.id), Vector.empty).toList
-                                    )
+                                recentChat <- memory.replyContext
+                                recentUser <- memory.recentUser(UserId(user.id))
                                 gen        <- llmService.generateReply(
                                                 ReplyInputs(
                                                   target = target,
@@ -108,9 +88,8 @@ object LlmFunctionality:
                                                   recentUserMsgs = recentUser
                                                 )
                                               )
-                                _          <- context.update(m =>
-                                                  (m :+ LlmContextMessage(None, config.botName, gen.text))
-                                                      .takeRight(config.chatBufferSize)
+                                _          <- memory.ingest(
+                                                LlmContextMessage(None, config.botName, gen.text)
                                               )
                                 _          <- sendIfNotEmpty(gen.text.trim)
                             yield gen
@@ -123,5 +102,10 @@ object LlmFunctionality:
             override def reply: Scenario[IO, Unit] =
                 for
                     msg <- Scenario.expect(textMessage)
-                    _   <- Scenario.eval(IO.whenA(config.enabled)(ingest(msg) *> maybeReply(msg)))
+                    _   <- Scenario.eval(
+                             IO.whenA(config.enabled)(
+                               memory.ingest(LlmContextMessage.fromTextMessage(msg)) *>
+                                   maybeReply(msg)
+                             )
+                           )
                 yield ()
