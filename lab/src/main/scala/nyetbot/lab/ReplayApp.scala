@@ -11,6 +11,7 @@ import cats.syntax.all.*
 import fs2.Stream
 import fs2.io.file.Files
 import fs2.io.file.Path
+import io.circe.Codec
 import io.circe.Encoder
 import io.circe.parser.decode
 import io.circe.syntax.*
@@ -39,10 +40,9 @@ object ReplayApp extends IOApp:
     )
     final case class LoadedWindow(name: String, file: Path, window: CorpusWindow)
 
-    final case class ScenarioInfo(name: String, file: String, source: String)
-        derives Encoder.AsObject
+    final case class ScenarioInfo(name: String, file: String, source: String) derives Codec.AsObject
     final case class InputInfo(file: String, meta: WindowMeta, trigger: WindowTrigger)
-        derives Encoder.AsObject
+        derives Codec.AsObject
     final case class ReplayOutput(
         scenario: ScenarioInfo,
         input: InputInfo,
