@@ -1,0 +1,30 @@
+lab/src/main/scala/nyetbot/lab/Tty.scala
+  s_8fb408309db26b::t_d88d186f40d389 1-35
+lab/src/main/scala/nyetbot/lab/ReplayApp.scala
+  s_8fb408309db26b::t_c78cb9dceb3f86 43
+  s_8fb408309db26b::t_9b711adfd24721 14
+  s_8fb408309db26b::t_f9a004da6af152 45
+lab/src/test/scala/nyetbot/lab/ScoreAppSpec.scala
+  s_8fb408309db26b::t_9a392b15f20ca2 1-67,70-299
+  s_8fb408309db26b::t_c78cb9dceb3f86 68-69
+lab/src/main/scala/nyetbot/lab/ScoreApp.scala
+  s_8fb408309db26b::t_13598ed85340be 64
+  s_8fb408309db26b::t_c78cb9dceb3f86 193-195
+  s_8fb408309db26b::t_77bf074f482e06 1-63,65-192,196-292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "6d2be75c3ce3779fc3c651fd043e4fbdbdfc59d3",
+  "prompts": {},
+  "sessions": {
+    "s_8fb408309db26b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "367472db-310e-49d0-a01e-9291a676e8ae",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Gleb Lobov <lobzison@gmail.com>"
+    }
+  }
+}
