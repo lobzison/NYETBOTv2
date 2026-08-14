@@ -74,5 +74,8 @@ sbt "scalafmtCheckAll; scalafmtSbtCheck"
 
 The formatting config is `.scalafmt.conf` — do not change it as part of an unrelated change.
 
+## Llm reply functionality testing
+When changing anything that affects the reply functionality(configs, pre-prompts) it's crucial to A/B test your changes. ./lab project is for it. Navigate there, and follow the instructions
+
 **Never** write any comments
 **Never** commit changes unless explicitly asked to
