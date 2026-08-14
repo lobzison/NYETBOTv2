@@ -1,0 +1,20 @@
+lab/AGENTS.md
+  s_8fb408309db26b::t_3f2f66c424bb8e 30-34
+  s_8fb408309db26b::t_2e28629e193237 1-29,35-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "68d11a68da05539bb59b86568160106754808156",
+  "prompts": {},
+  "sessions": {
+    "s_8fb408309db26b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "367472db-310e-49d0-a01e-9291a676e8ae",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Gleb Lobov <lobzison@gmail.com>"
+    }
+  }
+}
