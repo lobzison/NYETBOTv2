@@ -51,7 +51,6 @@ addCommandAlias(
 lazy val core =
     project
         .in(file("."))
-        .aggregate(LocalProject("lab"))
         .settings(commonSettings *)
         .settings(
           run / aggregate     := false,
