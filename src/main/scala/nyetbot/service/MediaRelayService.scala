@@ -9,7 +9,7 @@ trait MediaRelayService[F[_]]:
 
 object MediaRelayService:
     private val defaultRelays: List[MediaRelay[IO]] = List(
-      MediaRelay.linkHostRewrite("x.com", "xcancel.com")
+      MediaRelay.linkHostRewrite("x.com", "xxcancel.com")
     )
 
     def apply(): MediaRelayService[IO] =
